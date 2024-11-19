@@ -3,5 +3,7 @@
     margin-right: auto;
     background-color: aqua;
     text-align: center;
+    border: 2px;
+    border-style: double;
 }
 
