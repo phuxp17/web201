@@ -7,3 +7,25 @@
     border-style: double;
 }
 
+h1{
+    text-align: center;
+    color: red;
+}
+.color{     
+    color: red;
+}
+.fontweight{
+    font-weight: bold;
+}
+.fontsize{
+    font-size: 20px;
+}
+.fontfamily{
+    font-family: Arial, sans-serif;
+}
+.fontstyle{
+    font-style: italic;
+}
+.textalign{
+    text-align: center;
+}
