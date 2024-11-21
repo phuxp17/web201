@@ -7,25 +7,38 @@
     border-style: double;
 }
 
-h1{
+h1 {
     text-align: center;
     color: red;
 }
-.color{     
+
+.color {
     color: red;
 }
-.fontweight{
+
+.fontweight {
     font-weight: bold;
 }
-.fontsize{
+
+.fontsize {
     font-size: 20px;
 }
-.fontfamily{
+
+.fontfamily {
     font-family: Arial, sans-serif;
 }
-.fontstyle{
+
+.fontstyle {
     font-style: italic;
 }
-.textalign{
+
+.textalign {
     text-align: center;
+}
+
+.part2 a {
+    /* Dùng để chỉnh sửa thằng con trong một class cha */
+    text-decoration: none;
+    font-style: italic;
+    color: red;
 }
