@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khám Phá Thiết Kế CSDL eCommerce (Nâng Cao)</title>
+    <title>Khám Phá Thiết Kế CSDL eCommerce (Đầy Đủ Tính Năng)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Visualization & Content Choices:
         - Report Info: SQL Constraints (PK, FK, NOT NULL, UNIQUE, CHECK, DEFAULT) -> Goal: Inform, Understand Rules -> Presentation: Textual descriptions, bulleted examples per constraint. -> Interaction: Static display within tab. -> Justification: Clear explanation of fundamental DB rules. Method: HTML/CSS.
         - Report Info: Product Expiration & Repurposing (refined) -> Goal: Problem/Solution Analysis, Understand Advanced Modeling -> Presentation: Problem statement, proposed new/updated table structures (Products with 'is_recyclable', Inventory_Lot, Product_Transformation) with attributes listed in HTML tables, and textual explanations for their necessity, emphasizing derived products are also in 'Products' table. -> Interaction: Static display. -> Justification: Addresses specific user query about advanced e-commerce DB scenarios, promotes understanding of normalization and detailed tracking. Method: HTML/CSS tables for schema.
-        - Existing content (Overview, Entities, Relationships, Principles, Conclusion) retained and data populated from source report.
+        - Report Info: Product Reviews -> Goal: Inform, Understand Business Logic -> Presentation: New entity Product_Reviews with attributes and explanation of purchase-based review logic. -> Interaction: Static display. -> Justification: Addresses user request for review system. Method: HTML/CSS table.
+        - Report Info: Sales & Coupons -> Goal: Inform, Understand Business Logic -> Presentation: New entities Sales and Coupons with detailed attributes and their specific functionalities (dates, limits, scope). -> Interaction: Static display. -> Justification: Addresses user request for promotion systems. Method: HTML/CSS tables.
         - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
     -->
     <style>
@@ -95,48 +96,20 @@
                 </button>
             </div>
             <nav id="mainNav" class="md:flex md:space-x-2 border-t border-sky-600 md:border-none hidden md:block">
-                <button class="tab-button active text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="overview">📖 Tổng Quan</button>
-                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="entities">🧩 Các Thực Thể</button>
+                <button class="tab-button active text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="entities">🧩 Các Thực Thể</button>
                 <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="relationships">🔗 Mối Quan Hệ</button>
-                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="principles">📜 Nguyên Tắc</button>
                 <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="constraints">🔒 Ràng Buộc</button>
                 <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="expiration-repurpose">♻️ HSD & Tái Chế</button>
-                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="conclusion">💡 Kết Luận</button>
+                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="product-reviews">⭐ Đánh Giá SP</button>
+                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="promotions-coupons">🎁 Khuyến Mãi & Coupon</button>
             </nav>
         </div>
     </header>
 
     <main class="container mx-auto p-4 sm:p-6 lg:p-8">
-        <div id="overview" class="tab-content active bg-white shadow-lg rounded-lg">
+        <div id="entities" class="tab-content active bg-white shadow-lg rounded-lg">
             <div class="tab-inner-content">
-                <h2 class="text-2xl font-semibold text-sky-700 mb-6">I. Giới Thiệu về Mô Hình Cơ Sở Dữ Liệu Quan Hệ và ERD</h2>
-                <p class="mb-4 text-stone-700 leading-relaxed">Thiết kế cơ sở dữ liệu là một bước then chốt trong quá trình phát triển hệ thống, đặc biệt đối với các nền tảng thương mại điện tử nơi khối lượng dữ liệu và giao dịch rất lớn. Một mô hình dữ liệu được tổ chức tốt sẽ đảm bảo tính toàn vẹn, hiệu suất và khả năng mở rộng của hệ thống.</p>
-                <div class="mb-6 p-4 border border-stone-200 rounded-lg bg-stone-50">
-                    <h3 class="text-xl font-semibold text-sky-600 mb-3">1.1. Khái niệm Thực thể (Entity), Thuộc tính (Attribute) và Mối quan hệ (Relationship)</h3>
-                    <ul class="list-disc list-inside space-y-3 text-stone-700">
-                        <li><strong>Thực thể (Entity):</strong> Là các đối tượng hoặc khái niệm quan trọng mà hệ thống cần lưu trữ thông tin (ví dụ: "Khách hàng", "Sản phẩm"). Trong ERD, biểu thị bằng hình chữ nhật. Các "thực thể trung gian" (ví dụ: "Chi tiết Đơn hàng") rất quan trọng để mô hình hóa mối quan hệ nhiều-nhiều và sự linh hoạt của nghiệp vụ.</li>
-                        <li><strong>Thuộc tính (Attribute):</strong> Là các đặc điểm mô tả một thực thể (ví dụ: "Tên", "Địa chỉ" của Khách hàng). Trong ERD, biểu thị bằng hình elip.</li>
-                        <li><strong>Mối quan hệ (Relationship):</strong> Thể hiện sự liên kết giữa hai hoặc nhiều thực thể (ví dụ: Khách hàng "đặt" Đơn hàng). Trong ERD, biểu thị bằng hình thoi.</li>
-                    </ul>
-                </div>
-                <div class="p-4 border border-stone-200 rounded-lg bg-stone-50">
-                    <h3 class="text-xl font-semibold text-sky-600 mb-3">1.2. Vai trò của Sơ đồ Quan hệ Thực thể (ERD)</h3>
-                    <p class="mb-3 text-stone-700 leading-relaxed">ERD là công cụ trực quan giúp hình dung các đối tượng kinh doanh và mối quan hệ giữa chúng.</p>
-                    <ul class="list-disc list-inside space-y-3 text-stone-700">
-                        <li><strong>Giải quyết rắc rối dữ liệu:</strong> Tạo nền tảng dữ liệu chính xác, đáng tin cậy.</li>
-                        <li><strong>Hỗ trợ bảo trì và nâng cấp:</strong> Cấu trúc rõ ràng giúp dễ dàng điều chỉnh hệ thống.</li>
-                        <li><strong>Giảm thiểu sai sót, tiết kiệm chi phí:</strong> Phát hiện lỗi thiết kế sớm.</li>
-                        <li><strong>Cải thiện giao tiếp:</strong> Giúp các bên liên quan hiểu cấu trúc dữ liệu.</li>
-                        <li><strong>Quy trình thiết kế ERM:</strong> Xác định thực thể, khóa, mối quan hệ, thuộc tính, hoàn thiện và kiểm tra.</li>
-                        <li><strong>Công cụ hỗ trợ:</strong> Microsoft Visio, Lucidchart, MySQL Workbench, dbdiagram.io.</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <div id="entities" class="tab-content bg-white shadow-lg rounded-lg">
-            <div class="tab-inner-content">
-                <h2 class="text-2xl font-semibold text-sky-700 mb-6">II. Xác Định Các Thực Thể Chính và Thuộc Tính</h2>
+                <h2 class="text-2xl font-semibold text-sky-700 mb-6">I. Xác Định Các Thực Thể Chính và Thuộc Tính</h2>
                 <p class="mb-6 text-stone-700 leading-relaxed">Thiết kế cơ sở dữ liệu cho sàn thương mại điện tử đa bên đòi hỏi quản lý thông tin chi tiết cho nhiều loại người dùng và đối tượng kinh doanh. Dưới đây là các thực thể chính và thuộc tính của chúng. Chọn một thực thể từ danh sách bên trái để xem chi tiết các thuộc tính và mô tả của nó.</p>
                 <div class="md:flex md:space-x-6">
                     <div class="md:w-1/3 mb-6 md:mb-0">
@@ -153,10 +126,10 @@
 
         <div id="relationships" class="tab-content bg-white shadow-lg rounded-lg">
              <div class="tab-inner-content">
-                <h2 class="text-2xl font-semibold text-sky-700 mb-6">III. Mối Quan Hệ Giữa Các Thực Thể</h2>
+                <h2 class="text-2xl font-semibold text-sky-700 mb-6">II. Mối Quan Hệ Giữa Các Thực Thể</h2>
                 <p class="mb-4 text-stone-700 leading-relaxed">Mối quan hệ là xương sống của cơ sở dữ liệu quan hệ, định nghĩa cách các thực thể tương tác. Việc thiết lập mối quan hệ chính xác là rất quan trọng để duy trì tính toàn vẹn dữ liệu và cho phép truy xuất thông tin hiệu quả.</p>
                 <div class="mb-6 p-4 border border-stone-200 rounded-lg bg-stone-50">
-                    <h3 class="text-xl font-semibold text-sky-600 mb-3">3.1. Các loại mối quan hệ</h3>
+                    <h3 class="text-xl font-semibold text-sky-600 mb-3">2.1. Các loại mối quan hệ</h3>
                     <ul class="list-disc list-inside space-y-3 text-stone-700">
                         <li><strong>Một-một (One-to-One - 1:1):</strong> Mỗi bản ghi ở Bảng A liên kết với một bản ghi ở Bảng B, và ngược lại. Ví dụ: `Users` và `User_Profiles` (nếu thông tin hồ sơ lớn/nhạy cảm).</li>
                         <li><strong>Một-nhiều (One-to-Many - 1:N):</strong> Một bản ghi ở Bảng A liên kết với nhiều bản ghi ở Bảng B, nhưng mỗi bản ghi ở Bảng B chỉ liên kết với một ở Bảng A. Ví dụ: Một `Khách hàng` có nhiều `Đơn hàng`.</li>
@@ -176,18 +149,9 @@
             </div>
         </div>
 
-        <div id="principles" class="tab-content bg-white shadow-lg rounded-lg">
-            <div class="tab-inner-content">
-                <h2 class="text-2xl font-semibold text-sky-700 mb-6">IV. Nguyên Tắc Thiết Kế Cơ Sở Dữ Liệu Tối Ưu</h2>
-                <p class="mb-6 text-stone-700 leading-relaxed">Để đảm bảo hệ thống hoạt động hiệu quả, ổn định và an toàn, cần tuân thủ các nguyên tắc thiết kế tối ưu. Nhấp vào từng nguyên tắc để xem chi tiết.</p>
-                <div id="principlesAccordion" class="space-y-4">
-                </div>
-            </div>
-        </div>
-
         <div id="constraints" class="tab-content bg-white shadow-lg rounded-lg">
             <div class="tab-inner-content">
-                <h2 class="text-2xl font-semibold text-sky-700 mb-6">V. Ràng Buộc (Constraints) trong Cơ Sở Dữ Liệu SQL</h2>
+                <h2 class="text-2xl font-semibold text-sky-700 mb-6">III. Ràng Buộc (Constraints) trong Cơ Sở Dữ Liệu SQL</h2>
                 <p class="mb-6 text-stone-700 leading-relaxed">Các ràng buộc trong SQL là những quy tắc được áp dụng cho các cột hoặc bảng trong cơ sở dữ liệu để giới hạn loại dữ liệu có thể được lưu trữ, đảm bảo tính chính xác, toàn vẹn và đáng tin cậy của dữ liệu. Chúng giúp ngăn chặn việc nhập dữ liệu không hợp lệ hoặc không nhất quán.</p>
                 <div id="constraintsList" class="space-y-6">
                 </div>
@@ -196,7 +160,7 @@
 
         <div id="expiration-repurpose" class="tab-content bg-white shadow-lg rounded-lg">
             <div class="tab-inner-content">
-                <h2 class="text-2xl font-semibold text-sky-700 mb-6">VI. Quản Lý Hạn Sử Dụng & Tái Chế Sản Phẩm</h2>
+                <h2 class="text-2xl font-semibold text-sky-700 mb-6">IV. Quản Lý Hạn Sử Dụng & Tái Chế Sản Phẩm</h2>
                 <p class="mb-4 text-stone-700 leading-relaxed">Trong một số ngành hàng như thực phẩm, dược phẩm, việc quản lý hạn sử dụng (HSD) của sản phẩm là rất quan trọng. Đồng thời, khả năng tái chế hoặc chuyển đổi sản phẩm gần hết hạn thành một dạng sản phẩm khác (ví dụ: cà rốt tươi thành nước ép cà rốt) có thể giúp giảm thiểu lãng phí và tối ưu hóa giá trị. Phần này sẽ thảo luận về cách mở rộng mô hình cơ sở dữ liệu để giải quyết các yêu cầu này.</p>
 
                 <div class="mb-8 p-6 border border-amber-300 rounded-lg bg-amber-50 shadow">
@@ -253,23 +217,97 @@
             </div>
         </div>
 
-        <div id="conclusion" class="tab-content bg-white shadow-lg rounded-lg">
+        <div id="product-reviews" class="tab-content bg-white shadow-lg rounded-lg">
             <div class="tab-inner-content">
-                <h2 class="text-2xl font-semibold text-sky-700 mb-6">VII. Kết Luận và Khuyến Nghị</h2>
-                <p class="mb-4 text-stone-700 leading-relaxed">Thiết kế cơ sở dữ liệu cho một sàn thương mại điện tử đa bên là một nhiệm vụ phức tạp nhưng vô cùng quan trọng, đòi hỏi sự hiểu biết sâu sắc về cả nghiệp vụ kinh doanh và các nguyên tắc kỹ thuật. Một cơ sở dữ liệu được thiết kế tốt không chỉ là nơi lưu trữ dữ liệu mà còn là nền tảng chiến lược cho sự thành công, khả năng mở rộng và bền vững của nền tảng thương mại điện tử.</p>
-                <p class="mb-4 text-stone-700 leading-relaxed">Việc xác định rõ ràng các thực thể, thuộc tính, mối quan hệ, và áp dụng các ràng buộc chặt chẽ là nền tảng. Mở rộng mô hình để xử lý các nghiệp vụ phức tạp như quản lý hạn sử dụng và tái chế sản phẩm cho thấy tầm quan trọng của việc thiết kế linh hoạt và có khả năng thích ứng.</p>
-                <div class="p-4 border border-emerald-200 rounded-lg bg-emerald-50">
-                    <h3 class="text-xl font-semibold text-emerald-600 mb-3">Khuyến Nghị Chính:</h3>
-                    <ul class="list-disc list-inside space-y-3 text-stone-700">
-                        <li><strong>Đầu tư vào giai đoạn thiết kế ERD:</strong> Coi ERD là công cụ quản lý rủi ro và giao tiếp chiến lược.</li>
-                        <li><strong>Thiết kế linh hoạt với thực thể trung gian:</strong> Ưu tiên bảng nối cho mối quan hệ nhiều-nhiều và các bảng chuyên biệt cho nghiệp vụ phức tạp.</li>
-                        <li><strong>Áp dụng ràng buộc chặt chẽ:</strong> Sử dụng đầy đủ các loại ràng buộc (PK, FK, NOT NULL, UNIQUE, CHECK, DEFAULT) để đảm bảo tính toàn vẹn dữ liệu.</li>
-                        <li><strong>Ưu tiên bảo mật từ giai đoạn thiết kế:</strong> Tích hợp các biện pháp bảo mật vào mọi khía cạnh.</li>
-                        <li><strong>Lập kế hoạch cho khả năng mở rộng ngay từ đầu:</strong> Chuẩn bị cho sự tăng trưởng lưu lượng và dữ liệu.</li>
-                        <li><strong>Thực hiện tối ưu hóa hiệu suất liên tục:</strong> Đảm bảo trải nghiệm người dùng nhanh chóng và mượt mà.</li>
-                    </ul>
+                <h2 class="text-2xl font-semibold text-sky-700 mb-6">V. Đánh Giá Sản Phẩm (Product Reviews)</h2>
+                <p class="mb-4 text-stone-700 leading-relaxed">Hệ thống đánh giá sản phẩm là một tính năng quan trọng giúp người mua đưa ra quyết định thông minh và cung cấp phản hồi có giá trị cho người bán. Để đảm bảo tính xác thực, chỉ những người dùng đã mua sản phẩm mới có thể đánh giá.</p>
+                <div class="p-4 border border-emerald-200 rounded-lg bg-emerald-50 shadow">
+                    <h3 class="text-xl font-semibold text-emerald-700 mb-3">Thực thể: `Product_Reviews`</h3>
+                    <p class="mb-4 text-stone-700 leading-relaxed">Bảng này lưu trữ thông tin về các đánh giá sản phẩm từ người dùng.</p>
+                    <div class="overflow-x-auto shadow rounded-md">
+                        <table class="min-w-full bg-white border border-stone-200">
+                            <thead class="bg-stone-100">
+                                <tr>
+                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Tên Thuộc Tính</th>
+                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Loại (PK/FK/Ràng buộc)</th>
+                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Mô Tả</th>
+                                </tr>
+                            </thead>
+                            <tbody id="product-reviews-attributes" class="divide-y divide-stone-200">
+                                </tbody>
+                        </table>
+                    </div>
+                    <p class="mt-4 text-sm text-stone-600 leading-relaxed">
+                        <strong>Cách hoạt động:</strong>
+                        <ul class="list-disc list-inside ml-4 space-y-1">
+                            <li>Khi người dùng mua một sản phẩm trong một đơn hàng, một bản ghi `Order_Item` được tạo.</li>
+                            <li>Người dùng chỉ có thể tạo đánh giá cho một `product_id` cụ thể thông qua một `order_item_id` đã mua. Điều này đảm bảo rằng đánh giá là hợp lệ và liên quan đến một giao dịch mua thực tế.</li>
+                            <li>Ràng buộc `UNIQUE (order_item_id)` đảm bảo mỗi mục sản phẩm trong đơn hàng chỉ được đánh giá một lần.</li>
+                            <li>Trạng thái `status` giúp quản trị viên kiểm duyệt đánh giá trước khi hiển thị công khai.</li>
+                        </ul>
+                    </p>
                 </div>
-                 <p class="mt-6 text-stone-700 leading-relaxed">Bằng cách tuân thủ những nguyên tắc này, các nhà phát triển và kiến trúc sư cơ sở dữ liệu có thể xây dựng một nền tảng thương mại điện tử mạnh mẽ, đáng tin cậy và sẵn sàng cho tương lai.</p>
+            </div>
+        </div>
+
+        <div id="promotions-coupons" class="tab-content bg-white shadow-lg rounded-lg">
+            <div class="tab-inner-content">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-6">VI. Khuyến Mãi (Sales) & Mã Giảm Giá (Coupons)</h2>
+                <p class="mb-4 text-stone-700 leading-relaxed">Các chương trình khuyến mãi và mã giảm giá là công cụ mạnh mẽ để thu hút khách hàng, tăng doanh số và quản lý tồn kho. Chúng được thiết kế để linh hoạt và có thể áp dụng theo nhiều quy tắc khác nhau.</p>
+
+                <div class="mb-8 p-4 border border-blue-200 rounded-lg bg-blue-50 shadow">
+                    <h3 class="text-xl font-semibold text-blue-700 mb-3">Thực thể: `Sales` (Chương Trình Giảm Giá Chung)</h3>
+                    <p class="mb-4 text-stone-700 leading-relaxed">Bảng này quản lý các chương trình giảm giá tổng thể áp dụng cho một nhóm sản phẩm hoặc toàn bộ sàn.</p>
+                    <div class="overflow-x-auto shadow rounded-md">
+                        <table class="min-w-full bg-white border border-stone-200">
+                            <thead class="bg-stone-100">
+                                <tr>
+                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Tên Thuộc Tính</th>
+                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Loại (PK/Ràng buộc)</th>
+                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Mô Tả</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sales-attributes" class="divide-y divide-stone-200">
+                                </tbody>
+                        </table>
+                    </div>
+                    <p class="mt-4 text-sm text-stone-600 leading-relaxed">
+                        <strong>Cách hoạt động:</strong>
+                        <ul class="list-disc list-inside ml-4 space-y-1">
+                            <li>`Sales` đại diện cho các sự kiện giảm giá lớn (ví dụ: 'Flash Sale', 'Giảm giá cuối năm').</li>
+                            <li>`discount_type` và `discount_value` xác định mức giảm giá.</li>
+                            <li>`applies_to_scope` và `scope_value` cho phép linh hoạt áp dụng cho toàn bộ sản phẩm, một số danh mục hoặc sản phẩm cụ thể.</li>
+                            <li>Giá cuối cùng của sản phẩm trên sàn sẽ được tính toán dựa trên giá gốc và các chương trình `Sales` đang hoạt động.</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="p-4 border border-purple-200 rounded-lg bg-purple-50 shadow">
+                    <h3 class="text-xl font-semibold text-purple-700 mb-3">Thực thể: `Coupons` (Mã Giảm Giá)</h3>
+                    <p class="mb-4 text-stone-700 leading-relaxed">Bảng này quản lý các mã giảm giá cá nhân hoặc công khai mà người dùng có thể áp dụng khi thanh toán.</p>
+                    <div class="overflow-x-auto shadow rounded-md">
+                        <table class="min-w-full bg-white border border-stone-200">
+                            <thead class="bg-stone-100">
+                                <tr>
+                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Tên Thuộc Tính</th>
+                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Loại (PK/Ràng buộc)</th>
+                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Mô Tả</th>
+                                </tr>
+                            </thead>
+                            <tbody id="coupons-attributes" class="divide-y divide-stone-200">
+                                </tbody>
+                        </table>
+                    </div>
+                    <p class="mt-4 text-sm text-stone-600 leading-relaxed">
+                        <strong>Cách hoạt động:</strong>
+                        <ul class="list-disc list-inside ml-4 space-y-1">
+                            <li>Người dùng nhập `code` của coupon khi thanh toán.</li>
+                            <li>Hệ thống kiểm tra `start_date`, `expiration_date`, `quantity_available`, `usage_limit_per_customer` và `applies_to_scope` để xác định tính hợp lệ của coupon.</li>
+                            <li>Nếu hợp lệ, `discount_value` sẽ được áp dụng cho đơn hàng. `is_free_shipping` sẽ được kiểm tra để miễn phí vận chuyển.</li>
+                            <li>Khi coupon được sử dụng, `quantity_available` (nếu có) sẽ giảm và lịch sử sử dụng của khách hàng sẽ được ghi lại (có thể trong bảng `User_Coupon_Usage` riêng hoặc trong bảng `Orders`).</li>
+                        </ul>
+                    </p>
+                </div>
             </div>
         </div>
     </main>
@@ -476,6 +514,59 @@ const entitiesData = {
             { name: "transformed_by_user_id", type: "FK (Users.user_id)", details: "Người dùng (admin/seller) thực hiện chuyển đổi." },
             { name: "notes", type: "TEXT", details: "Ghi chú thêm về quá trình chuyển đổi." }
         ]
+    },
+    "Product_Reviews": {
+        name: "Đánh Giá Sản Phẩm (Product_Reviews)",
+        description: "Lưu trữ các đánh giá và xếp hạng của người dùng cho từng sản phẩm đã mua.",
+        attributes: [
+            { name: "review_id", type: "PK", details: "Mã định danh duy nhất cho đánh giá." },
+            { name: "product_id", type: "FK (Products.product_id), NOT NULL", details: "Sản phẩm được đánh giá." },
+            { name: "user_id", type: "FK (Users.user_id), NOT NULL", details: "Người dùng đã thực hiện đánh giá." },
+            { name: "order_item_id", type: "FK (Order_Items.order_item_id), UNIQUE, NOT NULL", details: "Mục đơn hàng cụ thể mà sản phẩm được mua. Đảm bảo người dùng chỉ đánh giá sản phẩm đã mua và mỗi mục đơn hàng chỉ được đánh giá một lần." },
+            { name: "rating", type: "INTEGER, NOT NULL", details: "Điểm đánh giá (ví dụ: 1 đến 5 sao). CHECK (`rating` >= 1 AND `rating` <= 5)" },
+            { name: "comment", type: "TEXT", details: "Nội dung bình luận của đánh giá." },
+            { name: "review_date", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Ngày và giờ đánh giá." },
+            { name: "status", type: "VARCHAR(20), NOT NULL, DEFAULT 'pending'", details: "Trạng thái đánh giá (ví dụ: 'pending', 'approved', 'rejected')." }
+        ]
+    },
+    "Sales": {
+        name: "Chương Trình Giảm Giá (Sales)",
+        description: "Quản lý các chương trình giảm giá tổng thể áp dụng cho sản phẩm trên sàn.",
+        attributes: [
+            { name: "sale_id", type: "PK", details: "Mã định danh duy nhất cho chương trình giảm giá." },
+            { name: "name", type: "VARCHAR(100), NOT NULL", details: "Tên chương trình giảm giá (ví dụ: 'Black Friday Sale')." },
+            { name: "description", type: "TEXT", details: "Mô tả chi tiết chương trình." },
+            { name: "discount_type", type: "VARCHAR(20), NOT NULL", details: "Loại giảm giá ('percentage', 'fixed_amount')." },
+            { name: "discount_value", type: "DECIMAL(10,2), NOT NULL", details: "Giá trị giảm giá (ví dụ: 0.10 cho 10%, 50000 cho 50.000 VNĐ)." },
+            { name: "start_date", type: "TIMESTAMP, NOT NULL", details: "Ngày bắt đầu chương trình." },
+            { name: "end_date", type: "TIMESTAMP, NOT NULL", details: "Ngày kết thúc chương trình." },
+            { name: "applies_to_scope", type: "VARCHAR(50), NOT NULL", details: "Phạm vi áp dụng ('all_products', 'specific_categories', 'specific_products')." },
+            { name: "scope_value", type: "TEXT", details: "Giá trị phạm vi (ví dụ: 'category_ids: [1,2,3]' hoặc 'product_ids: [101,102]'). Có thể là JSON hoặc danh sách ID phân cách bằng dấu phẩy." },
+            { name: "status", type: "VARCHAR(20), NOT NULL, DEFAULT 'active'", details: "Trạng thái chương trình ('active', 'inactive', 'scheduled', 'ended')." },
+            { name: "created_at", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Thời gian tạo bản ghi." }
+        ]
+    },
+    "Coupons": {
+        name: "Mã Giảm Giá (Coupons)",
+        description: "Quản lý các mã giảm giá cụ thể mà người dùng có thể áp dụng.",
+        attributes: [
+            { name: "coupon_id", type: "PK", details: "Mã định danh duy nhất cho mã giảm giá." },
+            { name: "code", type: "VARCHAR(50), UNIQUE, NOT NULL", details: "Mã coupon (ví dụ: 'FREESHIP2023')." },
+            { name: "description", type: "TEXT", details: "Mô tả mã giảm giá." },
+            { name: "discount_type", type: "VARCHAR(20), NOT NULL", details: "Loại giảm giá ('percentage', 'fixed_amount', 'free_shipping')." },
+            { name: "discount_value", type: "DECIMAL(10,2)", details: "Giá trị giảm giá (nếu có, không áp dụng cho freeship)." },
+            { name: "start_date", type: "TIMESTAMP, NOT NULL", details: "Ngày bắt đầu hiệu lực." },
+            { name: "expiration_date", type: "TIMESTAMP, NOT NULL", details: "Ngày hết hạn hiệu lực." },
+            { name: "is_free_shipping", type: "BOOLEAN, NOT NULL, DEFAULT FALSE", details: "Có miễn phí vận chuyển hay không." },
+            { name: "quantity_available", type: "INTEGER", details: "Số lượng mã coupon còn lại (NULL nếu không giới hạn). CHECK (`quantity_available` IS NULL OR `quantity_available` >= 0)" },
+            { name: "usage_limit_per_customer", type: "INTEGER", details: "Số lần sử dụng tối đa cho mỗi khách hàng (NULL nếu không giới hạn). CHECK (`usage_limit_per_customer` IS NULL OR `usage_limit_per_customer` >= 0)" },
+            { name: "applies_to_scope", type: "VARCHAR(50), NOT NULL", details: "Phạm vi áp dụng ('all_products', 'specific_categories', 'specific_products')." },
+            { name: "scope_value", type: "TEXT", details: "Giá trị phạm vi (ví dụ: 'category_ids: [1,2,3]' hoặc 'product_ids: [101,102]')." },
+            { name: "min_order_amount", type: "DECIMAL(12,2)", details: "Số tiền đơn hàng tối thiểu để áp dụng coupon (NULL nếu không có)." },
+            { name: "max_discount_amount", type: "DECIMAL(10,2)", details: "Số tiền giảm giá tối đa (NULL nếu không có)." },
+            { name: "status", type: "VARCHAR(20), NOT NULL, DEFAULT 'active'", details: "Trạng thái coupon ('active', 'inactive', 'expired')." },
+            { name: "created_at", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Thời gian tạo bản ghi." }
+        ]
     }
 };
 
@@ -495,11 +586,15 @@ const relationshipsData = [
     { name: "Products - Inventory_Lot", type: "1:N", from: "Products", to: "Inventory_Lot", details: "Một loại sản phẩm có thể có nhiều lô hàng tồn kho. `Inventory_Lot.product_id` (FK) -> `Products.product_id` (PK)." },
     { name: "Inventory_Lot - Product_Transformation (Source)", type: "1:N", from: "Inventory_Lot", to: "Product_Transformation", details: "Một lô hàng tồn kho có thể là nguồn cho nhiều lần chuyển đổi. `Product_Transformation.source_lot_id` (FK) -> `Inventory_Lot.lot_id` (PK)." },
     { name: "Products (Source) - Product_Transformation", type: "1:N", from: "Products", to: "Product_Transformation", details: "Một loại sản phẩm gốc có thể là nguồn cho nhiều giao dịch chuyển đổi. `Product_Transformation.source_product_id` (FK) -> `Products.product_id` (PK)." },
-    { name: "Products (Derived) - Product_Transformation", type: "1:N", from: "Products", to: "Product_Transformation", details: "Một loại sản phẩm (được tái chế/chuyển đổi) có thể là kết quả của nhiều giao dịch chuyển đổi. `Product_Transformation.derived_product_id` (FK) -> `Products.product_id` (PK)." }
+    { name: "Products (Derived) - Product_Transformation", type: "1:N", from: "Products", to: "Product_Transformation", details: "Một loại sản phẩm (được tái chế/chuyển đổi) có thể là kết quả của nhiều giao dịch chuyển đổi. `Product_Transformation.derived_product_id` (FK) -> `Products.product_id` (PK)." },
+    { name: "Users - Product_Reviews", type: "1:N", from: "Users", to: "Product_Reviews", details: "Một người dùng có thể viết nhiều đánh giá. `Product_Reviews.user_id` (FK) -> `Users.user_id` (PK)." },
+    { name: "Products - Product_Reviews", type: "1:N", from: "Products", to: "Product_Reviews", details: "Một sản phẩm có thể nhận nhiều đánh giá. `Product_Reviews.product_id` (FK) -> `Products.product_id` (PK)." },
+    { name: "Order_Items - Product_Reviews", type: "1:1", from: "Order_Items", to: "Product_Reviews", details: "Mỗi mục đơn hàng chỉ có thể có một đánh giá. `Product_Reviews.order_item_id` (FK, UNIQUE) -> `Order_Items.order_item_id` (PK). Đảm bảo đánh giá chỉ cho sản phẩm đã mua." },
+    { name: "Coupons - Orders", type: "1:N", from: "Coupons", to: "Orders (optional)", details: "Một mã giảm giá có thể được sử dụng trong nhiều đơn hàng. (Có thể thêm `coupon_id` vào bảng `Orders` hoặc bảng `Order_Coupons` trung gian để theo dõi sử dụng)." }
 ];
 
 const principlesData = [
-    { 
+    {
         title: "4.1. Chuẩn hóa cơ sở dữ liệu (Normalization)",
         content: `
             <p class="mb-2">Chuẩn hóa là quá trình tổ chức các cột và bảng để giảm thiểu dư thừa dữ liệu và cải thiện tính toàn vẹn.</p>
@@ -513,7 +608,7 @@ const principlesData = [
             <p class="mt-2"><strong>Đánh đổi:</strong> Có thể tạo nhiều bảng hơn, yêu cầu nhiều JOIN, đôi khi ảnh hưởng hiệu suất. Cần cân bằng.</p>
         `
     },
-    { 
+    {
         title: "4.2. Khả năng mở rộng (Scalability)",
         content: `
             <p class="mb-2">Khả năng của hệ thống để xử lý khối lượng công việc tăng hoặc dữ liệu lớn hơn mà vẫn duy trì hiệu suất.</p>
@@ -526,7 +621,7 @@ const principlesData = [
             </ul>
         `
     },
-    { 
+    {
         title: "4.3. Bảo mật dữ liệu (Security)",
         content: `
             <p class="mb-2">Tối quan trọng do tính nhạy cảm của thông tin khách hàng.</p>
@@ -540,7 +635,7 @@ const principlesData = [
             </ul>
         `
     },
-    { 
+    {
         title: "4.4. Tối ưu hóa hiệu suất (Performance Optimization)",
         content: `
             <p class="mb-2">Then chốt cho trải nghiệm người dùng. Trang chậm dẫn đến tỷ lệ thoát cao.</p>
@@ -638,7 +733,7 @@ const expirationRepurposingData = {
                 { name: "manufacturing_date", type: "DATE", details: "Ngày sản xuất của lô hàng (nếu có)." },
                 { name: "expiration_date", type: "DATE, NOT NULL", details: "Ngày hết hạn của lô sản phẩm." },
                 { name: "status", type: "VARCHAR(50), DEFAULT 'available'", details: "Trạng thái của lô hàng. CHECK (`status` IN ('available', 'nearing_expiry', 'expired', 'repurposed', 'sold_out'))" },
-                { name: "cost_price_per_unit", type: "DECIMAL(10,2)", details: "Giá vốn mỗi đơn vị của lô hàng này (nếu cần theo dõi FIFO/LIFO)." },
+                { name: "cost_price_per_unit", type: "DECIMAL(10,2)", details: "Giá vốn mỗi đơn vị của lô hàng này (để tính toán lợi nhuận)." },
                 { name: "location_in_warehouse", type: "VARCHAR(100)", details: "Vị trí lưu trữ cụ thể trong kho." }
             ]
         },
@@ -678,7 +773,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const entityDetail = document.getElementById('entityDetail');
     const relationshipList = document.getElementById('relationshipList');
     const relationshipDetail = document.getElementById('relationshipDetail');
-    const principlesAccordion = document.getElementById('principlesAccordion');
+    const principlesAccordion = document.getElementById('principlesAccordion'); // This element is now removed, but the variable remains
     const constraintsList = document.getElementById('constraintsList');
     const mobileMenuButton = document.getElementById('mobileMenuButton');
     const mainNav = document.getElementById('mainNav');
@@ -703,12 +798,17 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-    document.querySelector('.tab-button.active').classList.add('text-sky-600', 'border-sky-600');
-    document.querySelector('.tab-button.active').classList.remove('text-stone-100');
+    // Set initial active tab style for the new default tab (entities)
+    const initialActiveTab = document.querySelector('.tab-button[data-tab="entities"]');
+    if (initialActiveTab) {
+        initialActiveTab.classList.add('active', 'text-sky-600', 'border-sky-600');
+        initialActiveTab.classList.remove('text-stone-100');
+        document.getElementById('entities').classList.add('active'); // Ensure content is active
+    }
 
 
     function populateEntityList() {
-        entityList.innerHTML = ''; // Clear existing list
+        entityList.innerHTML = '';
         Object.keys(entitiesData).forEach(key => {
             const listItem = document.createElement('li');
             listItem.textContent = entitiesData[key].name;
@@ -759,7 +859,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function populateRelationshipList() {
-        relationshipList.innerHTML = ''; // Clear existing list
+        relationshipList.innerHTML = '';
         relationshipsData.forEach((rel, index) => {
             const listItem = document.createElement('li');
             listItem.textContent = rel.name;
@@ -789,49 +889,10 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
     }
     
-    function populatePrinciples() {
-        principlesAccordion.innerHTML = ''; // Clear existing content
-        principlesData.forEach((principle) => {
-            const div = document.createElement('div');
-            div.className = 'border border-stone-200 rounded-lg overflow-hidden shadow';
-            div.innerHTML = `
-                <button class="accordion-button w-full flex justify-between items-center p-4 bg-stone-50 hover:bg-stone-100 focus:outline-none transition-colors duration-150">
-                    <span class="text-lg font-medium text-sky-700 text-left">${principle.title}</span>
-                    <span class="accordion-icon text-sky-600 transform transition-transform duration-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                        </svg>
-                    </span>
-                </button>
-                <div class="accordion-content p-4 border-t border-stone-200 bg-white">
-                    ${principle.content}
-                </div>
-            `;
-            principlesAccordion.appendChild(div);
-        });
-
-        document.querySelectorAll('.accordion-button').forEach(button => {
-            button.addEventListener('click', () => {
-                const content = button.nextElementSibling;
-                const icon = button.querySelector('.accordion-icon');
-                button.classList.toggle('active');
-                icon.classList.toggle('rotate-180');
-
-                if (content.style.maxHeight) {
-                    content.style.maxHeight = null;
-                    setTimeout(() => {
-                         if (!button.classList.contains('active')) content.style.display = "none";
-                    }, 300);
-                } else {
-                    content.style.display = "block";
-                    content.style.maxHeight = content.scrollHeight + "px";
-                }
-            });
-        });
-    }
+    // Removed populatePrinciples() function as the tab is removed.
 
     function populateConstraints() {
-        constraintsList.innerHTML = ''; // Clear existing content
+        constraintsList.innerHTML = '';
         constraintsData.forEach(constraint => {
             const constraintDiv = document.createElement('div');
             constraintDiv.className = 'p-5 border border-blue-200 rounded-lg bg-blue-50 shadow';
@@ -885,11 +946,45 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('need-for-new-tables-explanation').innerHTML = data.needForNewTables.explanation;
     }
 
+    function populateProductReviews() {
+        const attributesBody = document.getElementById('product-reviews-attributes');
+        attributesBody.innerHTML = entitiesData.Product_Reviews.attributes.map(attr => `
+            <tr class="hover:bg-stone-50">
+                <td class="py-2 px-3 border-b border-stone-200 font-medium text-stone-700">${attr.name}</td>
+                <td class="py-2 px-3 border-b border-stone-200 text-sm text-sky-600">${attr.type}</td>
+                <td class="py-2 px-3 border-b border-stone-200 text-sm text-stone-600">${attr.details}</td>
+            </tr>
+        `).join('');
+    }
+
+    function populatePromotionsCoupons() {
+        const salesAttributesBody = document.getElementById('sales-attributes');
+        salesAttributesBody.innerHTML = entitiesData.Sales.attributes.map(attr => `
+            <tr class="hover:bg-stone-50">
+                <td class="py-2 px-3 border-b border-stone-200 font-medium text-stone-700">${attr.name}</td>
+                <td class="py-2 px-3 border-b border-stone-200 text-sm text-sky-600">${attr.type}</td>
+                <td class="py-2 px-3 border-b border-stone-200 text-sm text-stone-600">${attr.details}</td>
+            </tr>
+        `).join('');
+
+        const couponsAttributesBody = document.getElementById('coupons-attributes');
+        couponsAttributesBody.innerHTML = entitiesData.Coupons.attributes.map(attr => `
+            <tr class="hover:bg-stone-50">
+                <td class="py-2 px-3 border-b border-stone-200 font-medium text-stone-700">${attr.name}</td>
+                <td class="py-2 px-3 border-b border-stone-200 text-sm text-sky-600">${attr.type}</td>
+                <td class="py-2 px-3 border-b border-stone-200 text-sm text-stone-600">${attr.details}</td>
+            </tr>
+        `).join('');
+    }
+
+
     populateEntityList();
     populateRelationshipList();
-    populatePrinciples();
+    // populatePrinciples(); // Removed call to this function
     populateConstraints();
     populateExpirationRepurposing();
+    populateProductReviews();
+    populatePromotionsCoupons();
 });
 </script>
 </body>
