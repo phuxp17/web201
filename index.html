@@ -1,83 +1,896 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to my web</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Khám Phá Thiết Kế CSDL eCommerce (Nâng Cao)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Visualization & Content Choices:
+        - Report Info: SQL Constraints (PK, FK, NOT NULL, UNIQUE, CHECK, DEFAULT) -> Goal: Inform, Understand Rules -> Presentation: Textual descriptions, bulleted examples per constraint. -> Interaction: Static display within tab. -> Justification: Clear explanation of fundamental DB rules. Method: HTML/CSS.
+        - Report Info: Product Expiration & Repurposing (refined) -> Goal: Problem/Solution Analysis, Understand Advanced Modeling -> Presentation: Problem statement, proposed new/updated table structures (Products with 'is_recyclable', Inventory_Lot, Product_Transformation) with attributes listed in HTML tables, and textual explanations for their necessity, emphasizing derived products are also in 'Products' table. -> Interaction: Static display. -> Justification: Addresses specific user query about advanced e-commerce DB scenarios, promotes understanding of normalization and detailed tracking. Method: HTML/CSS tables for schema.
+        - Existing content (Overview, Entities, Relationships, Principles, Conclusion) retained and data populated from source report.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tab-button.active {
+            border-bottom-width: 2px;
+            border-color: #0284c7; /* sky-600 */
+            color: #0284c7; /* sky-600 */
+            font-weight: 600;
+        }
+        .accordion-content {
+            display: none;
+            transition: max-height 0.3s ease-out;
+            overflow: hidden;
+        }
+        .accordion-button.active .accordion-icon {
+            transform: rotate(180deg);
+        }
+        .entity-list-item.active {
+            background-color: #d1fae5; /* emerald-100 */
+            color: #059669; /* emerald-600 */
+            font-weight: 500;
+        }
+        .relationship-list-item.active {
+            background-color: #e0f2fe; /* sky-100 */
+            color: #0284c7; /* sky-600 */
+            font-weight: 500;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9; /* stone-100 */
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #94a3b8; /* stone-400 */
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* stone-500 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .tab-inner-content {
+            padding: 1.5rem; /* p-6 */
+        }
+        table th, table td {
+            padding: 0.75rem; /* p-3 */
+            vertical-align: top;
+        }
+    </style>
 </head>
+<body class="bg-stone-100 text-stone-800">
+    <header class="bg-sky-700 text-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <h1 class="text-xl sm:text-2xl font-semibold">📊 Thiết Kế CSDL Sàn Thương Mại Điện Tử</h1>
+                <button id="mobileMenuButton" class="md:hidden p-2 rounded-md text-stone-200 hover:text-white hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
+                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                    </svg>
+                </button>
+            </div>
+            <nav id="mainNav" class="md:flex md:space-x-2 border-t border-sky-600 md:border-none hidden md:block">
+                <button class="tab-button active text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="overview">📖 Tổng Quan</button>
+                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="entities">🧩 Các Thực Thể</button>
+                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="relationships">🔗 Mối Quan Hệ</button>
+                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="principles">📜 Nguyên Tắc</button>
+                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="constraints">🔒 Ràng Buộc</button>
+                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="expiration-repurpose">♻️ HSD & Tái Chế</button>
+                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="conclusion">💡 Kết Luận</button>
+            </nav>
+        </div>
+    </header>
 
-<body>
-    <div class="open">
-        <h1>Hello HTML WEB Design</h1>
-        <h3>Learn to Act</h3>
-    </div>
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <div id="overview" class="tab-content active bg-white shadow-lg rounded-lg">
+            <div class="tab-inner-content">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-6">I. Giới Thiệu về Mô Hình Cơ Sở Dữ Liệu Quan Hệ và ERD</h2>
+                <p class="mb-4 text-stone-700 leading-relaxed">Thiết kế cơ sở dữ liệu là một bước then chốt trong quá trình phát triển hệ thống, đặc biệt đối với các nền tảng thương mại điện tử nơi khối lượng dữ liệu và giao dịch rất lớn. Một mô hình dữ liệu được tổ chức tốt sẽ đảm bảo tính toàn vẹn, hiệu suất và khả năng mở rộng của hệ thống.</p>
+                <div class="mb-6 p-4 border border-stone-200 rounded-lg bg-stone-50">
+                    <h3 class="text-xl font-semibold text-sky-600 mb-3">1.1. Khái niệm Thực thể (Entity), Thuộc tính (Attribute) và Mối quan hệ (Relationship)</h3>
+                    <ul class="list-disc list-inside space-y-3 text-stone-700">
+                        <li><strong>Thực thể (Entity):</strong> Là các đối tượng hoặc khái niệm quan trọng mà hệ thống cần lưu trữ thông tin (ví dụ: "Khách hàng", "Sản phẩm"). Trong ERD, biểu thị bằng hình chữ nhật. Các "thực thể trung gian" (ví dụ: "Chi tiết Đơn hàng") rất quan trọng để mô hình hóa mối quan hệ nhiều-nhiều và sự linh hoạt của nghiệp vụ.</li>
+                        <li><strong>Thuộc tính (Attribute):</strong> Là các đặc điểm mô tả một thực thể (ví dụ: "Tên", "Địa chỉ" của Khách hàng). Trong ERD, biểu thị bằng hình elip.</li>
+                        <li><strong>Mối quan hệ (Relationship):</strong> Thể hiện sự liên kết giữa hai hoặc nhiều thực thể (ví dụ: Khách hàng "đặt" Đơn hàng). Trong ERD, biểu thị bằng hình thoi.</li>
+                    </ul>
+                </div>
+                <div class="p-4 border border-stone-200 rounded-lg bg-stone-50">
+                    <h3 class="text-xl font-semibold text-sky-600 mb-3">1.2. Vai trò của Sơ đồ Quan hệ Thực thể (ERD)</h3>
+                    <p class="mb-3 text-stone-700 leading-relaxed">ERD là công cụ trực quan giúp hình dung các đối tượng kinh doanh và mối quan hệ giữa chúng.</p>
+                    <ul class="list-disc list-inside space-y-3 text-stone-700">
+                        <li><strong>Giải quyết rắc rối dữ liệu:</strong> Tạo nền tảng dữ liệu chính xác, đáng tin cậy.</li>
+                        <li><strong>Hỗ trợ bảo trì và nâng cấp:</strong> Cấu trúc rõ ràng giúp dễ dàng điều chỉnh hệ thống.</li>
+                        <li><strong>Giảm thiểu sai sót, tiết kiệm chi phí:</strong> Phát hiện lỗi thiết kế sớm.</li>
+                        <li><strong>Cải thiện giao tiếp:</strong> Giúp các bên liên quan hiểu cấu trúc dữ liệu.</li>
+                        <li><strong>Quy trình thiết kế ERM:</strong> Xác định thực thể, khóa, mối quan hệ, thuộc tính, hoàn thiện và kiểm tra.</li>
+                        <li><strong>Công cụ hỗ trợ:</strong> Microsoft Visio, Lucidchart, MySQL Workbench, dbdiagram.io.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
 
-    <div class="part1">
-        <h2>I. Các thẻ cơ bản</h2>
-        <p> (p): Dùng để viết một đoạn văn bản paragraph. </p>
-        <p> (br): Thẻ để xuống dòng.</p>
-        <p>(div): Thẻ dùng để xác định một phần nội dung trong một bloc.</p>
-    </div>
-    <div class="part2">
-        <h2>II. Các thẻ khác</h2>
-        <p>(img): Hiển thị hình ảnh.</p><img
-            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSBgCPQmyPHrOWxnUvbmQIRwOipjW8woZUreA&s" alt="web"
-            width="200" height="150">
-        <p>(map): Tạo bản đồ ảnh</p>
-        <p>(a): Tạo một đường link</p><a href="https://spacedev.vn/" target="_blank">Link học tập</a>
+        <div id="entities" class="tab-content bg-white shadow-lg rounded-lg">
+            <div class="tab-inner-content">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-6">II. Xác Định Các Thực Thể Chính và Thuộc Tính</h2>
+                <p class="mb-6 text-stone-700 leading-relaxed">Thiết kế cơ sở dữ liệu cho sàn thương mại điện tử đa bên đòi hỏi quản lý thông tin chi tiết cho nhiều loại người dùng và đối tượng kinh doanh. Dưới đây là các thực thể chính và thuộc tính của chúng. Chọn một thực thể từ danh sách bên trái để xem chi tiết các thuộc tính và mô tả của nó.</p>
+                <div class="md:flex md:space-x-6">
+                    <div class="md:w-1/3 mb-6 md:mb-0">
+                        <h3 class="text-lg font-semibold text-sky-600 mb-3">Danh sách thực thể:</h3>
+                        <ul id="entityList" class="space-y-2 custom-scrollbar overflow-y-auto max-h-[calc(100vh-250px)] pr-2">
+                        </ul>
+                    </div>
+                    <div id="entityDetail" class="md:w-2/3 p-4 border border-stone-200 rounded-lg bg-stone-50 min-h-[300px]">
+                        <p class="text-stone-500 italic">Chọn một thực thể từ danh sách để xem chi tiết.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    </div>
-    <div class="part3">
-        <h2>III. List</h2>
-        <p>(ul): Tạo danh sách không có thứ tự</p>
-        <ul> List fruits
-            <li>orange</li>
-            <li>apple</li>
-            <li>banna</li>
-        </ul>
-        <p>(ol): Tạo danh sách có thứ tự</p>
-        <ol> List companies
-            <li>Samsung</li>
-            <li>Apple</li>
-            <li>Google</li>
-        </ol>
-    </div>
-    <div class="part4">
-        <h2>IV. Table</h2>
-        <p>(table): Tạo ra một bảng </p>
-        <p>(tr): Dùng để tạo row trong table</p>
-        <p>(td): Dùng để tạo ô trong table</p>
-        <p>(caption): Dùng để tạo tiêu đề</p>
-        <table border="1">
-            <caption>Danh sách tên</caption>
-            <tr>
-                <td>STT</td>
-                <td>Tên</td>
+        <div id="relationships" class="tab-content bg-white shadow-lg rounded-lg">
+             <div class="tab-inner-content">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-6">III. Mối Quan Hệ Giữa Các Thực Thể</h2>
+                <p class="mb-4 text-stone-700 leading-relaxed">Mối quan hệ là xương sống của cơ sở dữ liệu quan hệ, định nghĩa cách các thực thể tương tác. Việc thiết lập mối quan hệ chính xác là rất quan trọng để duy trì tính toàn vẹn dữ liệu và cho phép truy xuất thông tin hiệu quả.</p>
+                <div class="mb-6 p-4 border border-stone-200 rounded-lg bg-stone-50">
+                    <h3 class="text-xl font-semibold text-sky-600 mb-3">3.1. Các loại mối quan hệ</h3>
+                    <ul class="list-disc list-inside space-y-3 text-stone-700">
+                        <li><strong>Một-một (One-to-One - 1:1):</strong> Mỗi bản ghi ở Bảng A liên kết với một bản ghi ở Bảng B, và ngược lại. Ví dụ: `Users` và `User_Profiles` (nếu thông tin hồ sơ lớn/nhạy cảm).</li>
+                        <li><strong>Một-nhiều (One-to-Many - 1:N):</strong> Một bản ghi ở Bảng A liên kết với nhiều bản ghi ở Bảng B, nhưng mỗi bản ghi ở Bảng B chỉ liên kết với một ở Bảng A. Ví dụ: Một `Khách hàng` có nhiều `Đơn hàng`.</li>
+                        <li><strong>Nhiều-nhiều (Many-to-Many - M:N):</strong> Nhiều bản ghi ở Bảng A liên kết với nhiều bản ghi ở Bảng B, và ngược lại. Cần bảng trung gian. Ví dụ: `Sản phẩm` và `Đơn hàng` (thông qua `Chi tiết Đơn hàng`).</li>
+                    </ul>
+                </div>
+                <div class="md:flex md:space-x-6">
+                    <div class="md:w-1/3 mb-6 md:mb-0">
+                        <h3 class="text-lg font-semibold text-sky-600 mb-3">Danh sách mối quan hệ:</h3>
+                        <ul id="relationshipList" class="space-y-2 custom-scrollbar overflow-y-auto max-h-[calc(100vh-400px)] pr-2">
+                        </ul>
+                    </div>
+                    <div id="relationshipDetail" class="md:w-2/3 p-4 border border-stone-200 rounded-lg bg-stone-50 min-h-[200px]">
+                        <p class="text-stone-500 italic">Chọn một mối quan hệ từ danh sách để xem chi tiết.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="principles" class="tab-content bg-white shadow-lg rounded-lg">
+            <div class="tab-inner-content">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-6">IV. Nguyên Tắc Thiết Kế Cơ Sở Dữ Liệu Tối Ưu</h2>
+                <p class="mb-6 text-stone-700 leading-relaxed">Để đảm bảo hệ thống hoạt động hiệu quả, ổn định và an toàn, cần tuân thủ các nguyên tắc thiết kế tối ưu. Nhấp vào từng nguyên tắc để xem chi tiết.</p>
+                <div id="principlesAccordion" class="space-y-4">
+                </div>
+            </div>
+        </div>
+
+        <div id="constraints" class="tab-content bg-white shadow-lg rounded-lg">
+            <div class="tab-inner-content">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-6">V. Ràng Buộc (Constraints) trong Cơ Sở Dữ Liệu SQL</h2>
+                <p class="mb-6 text-stone-700 leading-relaxed">Các ràng buộc trong SQL là những quy tắc được áp dụng cho các cột hoặc bảng trong cơ sở dữ liệu để giới hạn loại dữ liệu có thể được lưu trữ, đảm bảo tính chính xác, toàn vẹn và đáng tin cậy của dữ liệu. Chúng giúp ngăn chặn việc nhập dữ liệu không hợp lệ hoặc không nhất quán.</p>
+                <div id="constraintsList" class="space-y-6">
+                </div>
+            </div>
+        </div>
+
+        <div id="expiration-repurpose" class="tab-content bg-white shadow-lg rounded-lg">
+            <div class="tab-inner-content">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-6">VI. Quản Lý Hạn Sử Dụng & Tái Chế Sản Phẩm</h2>
+                <p class="mb-4 text-stone-700 leading-relaxed">Trong một số ngành hàng như thực phẩm, dược phẩm, việc quản lý hạn sử dụng (HSD) của sản phẩm là rất quan trọng. Đồng thời, khả năng tái chế hoặc chuyển đổi sản phẩm gần hết hạn thành một dạng sản phẩm khác (ví dụ: cà rốt tươi thành nước ép cà rốt) có thể giúp giảm thiểu lãng phí và tối ưu hóa giá trị. Phần này sẽ thảo luận về cách mở rộng mô hình cơ sở dữ liệu để giải quyết các yêu cầu này.</p>
+
+                <div class="mb-8 p-6 border border-amber-300 rounded-lg bg-amber-50 shadow">
+                    <h3 class="text-xl font-semibold text-amber-700 mb-3" id="problem-title"></h3>
+                    <p class="text-stone-700 leading-relaxed" id="problem-description"></p>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold text-sky-600 mb-3" id="expiration-solution-title"></h3>
+                    <p class="mb-4 text-stone-700 leading-relaxed" id="expiration-solution-description"></p>
+                    <div class="p-4 border border-emerald-200 rounded-lg bg-emerald-50">
+                        <h4 class="text-lg font-semibold text-emerald-700 mb-2" id="inventory-lot-table-name"></h4>
+                        <div class="overflow-x-auto shadow rounded-md">
+                            <table class="min-w-full bg-white border border-stone-200">
+                                <thead class="bg-stone-100">
+                                    <tr>
+                                        <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Tên Thuộc Tính</th>
+                                        <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Loại (PK/FK/CHECK)</th>
+                                        <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Mô Tả</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventory-lot-attributes" class="divide-y divide-stone-200"></tbody>
+                            </table>
+                        </div>
+                        <p class="mt-4 text-sm text-stone-600 leading-relaxed" id="expiration-solution-explanation"></p>
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold text-sky-600 mb-3" id="repurposing-solution-title"></h3>
+                    <p class="mb-4 text-stone-700 leading-relaxed" id="repurposing-solution-description"></p>
+                    <div class="p-4 border border-emerald-200 rounded-lg bg-emerald-50">
+                        <h4 class="text-lg font-semibold text-emerald-700 mb-2" id="product-transformation-table-name"></h4>
+                        <div class="overflow-x-auto shadow rounded-md">
+                            <table class="min-w-full bg-white border border-stone-200">
+                                <thead class="bg-stone-100">
+                                    <tr>
+                                        <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Tên Thuộc Tính</th>
+                                        <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Loại (PK/FK)</th>
+                                        <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Mô Tả</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="product-transformation-attributes" class="divide-y divide-stone-200"></tbody>
+                            </table>
+                        </div>
+                        <p class="mt-4 text-sm text-stone-600 leading-relaxed" id="repurposing-solution-explanation"></p>
+                    </div>
+                </div>
+
+                <div class="p-6 border border-rose-300 rounded-lg bg-rose-50 shadow">
+                    <h3 class="text-xl font-semibold text-rose-700 mb-3" id="need-for-new-tables-title"></h3>
+                    <p class="text-stone-700 leading-relaxed" id="need-for-new-tables-explanation"></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="conclusion" class="tab-content bg-white shadow-lg rounded-lg">
+            <div class="tab-inner-content">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-6">VII. Kết Luận và Khuyến Nghị</h2>
+                <p class="mb-4 text-stone-700 leading-relaxed">Thiết kế cơ sở dữ liệu cho một sàn thương mại điện tử đa bên là một nhiệm vụ phức tạp nhưng vô cùng quan trọng, đòi hỏi sự hiểu biết sâu sắc về cả nghiệp vụ kinh doanh và các nguyên tắc kỹ thuật. Một cơ sở dữ liệu được thiết kế tốt không chỉ là nơi lưu trữ dữ liệu mà còn là nền tảng chiến lược cho sự thành công, khả năng mở rộng và bền vững của nền tảng thương mại điện tử.</p>
+                <p class="mb-4 text-stone-700 leading-relaxed">Việc xác định rõ ràng các thực thể, thuộc tính, mối quan hệ, và áp dụng các ràng buộc chặt chẽ là nền tảng. Mở rộng mô hình để xử lý các nghiệp vụ phức tạp như quản lý hạn sử dụng và tái chế sản phẩm cho thấy tầm quan trọng của việc thiết kế linh hoạt và có khả năng thích ứng.</p>
+                <div class="p-4 border border-emerald-200 rounded-lg bg-emerald-50">
+                    <h3 class="text-xl font-semibold text-emerald-600 mb-3">Khuyến Nghị Chính:</h3>
+                    <ul class="list-disc list-inside space-y-3 text-stone-700">
+                        <li><strong>Đầu tư vào giai đoạn thiết kế ERD:</strong> Coi ERD là công cụ quản lý rủi ro và giao tiếp chiến lược.</li>
+                        <li><strong>Thiết kế linh hoạt với thực thể trung gian:</strong> Ưu tiên bảng nối cho mối quan hệ nhiều-nhiều và các bảng chuyên biệt cho nghiệp vụ phức tạp.</li>
+                        <li><strong>Áp dụng ràng buộc chặt chẽ:</strong> Sử dụng đầy đủ các loại ràng buộc (PK, FK, NOT NULL, UNIQUE, CHECK, DEFAULT) để đảm bảo tính toàn vẹn dữ liệu.</li>
+                        <li><strong>Ưu tiên bảo mật từ giai đoạn thiết kế:</strong> Tích hợp các biện pháp bảo mật vào mọi khía cạnh.</li>
+                        <li><strong>Lập kế hoạch cho khả năng mở rộng ngay từ đầu:</strong> Chuẩn bị cho sự tăng trưởng lưu lượng và dữ liệu.</li>
+                        <li><strong>Thực hiện tối ưu hóa hiệu suất liên tục:</strong> Đảm bảo trải nghiệm người dùng nhanh chóng và mượt mà.</li>
+                    </ul>
+                </div>
+                 <p class="mt-6 text-stone-700 leading-relaxed">Bằng cách tuân thủ những nguyên tắc này, các nhà phát triển và kiến trúc sư cơ sở dữ liệu có thể xây dựng một nền tảng thương mại điện tử mạnh mẽ, đáng tin cậy và sẵn sàng cho tương lai.</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center p-4 text-sm text-stone-600 border-t border-stone-200 mt-8">
+        Ứng dụng tương tác dựa trên báo cáo thiết kế CSDL eCommerce.
+    </footer>
+
+<script>
+const entitiesData = {
+    "Users": {
+        name: "Người dùng (User)",
+        description: "Bảng này lưu trữ thông tin chung cho tất cả các loại người dùng trên nền tảng.",
+        attributes: [
+            { name: "user_id", type: "PK", details: "Mã định danh duy nhất cho mỗi người dùng." },
+            { name: "username", type: "UNIQUE, NOT NULL", details: "Tên đăng nhập, phải là duy nhất." },
+            { name: "email", type: "UNIQUE, NOT NULL", details: "Địa chỉ email (duy nhất, dùng cho đăng nhập và liên hệ)." },
+            { name: "password_hash", type: "NOT NULL", details: "Mật khẩu đã băm (để bảo mật)." },
+            { name: "first_name", type: "", details: "Tên của người dùng." },
+            { name: "last_name", type: "", details: "Họ của người dùng." },
+            { name: "phone_number", type: "UNIQUE", details: "Số điện thoại liên hệ (có thể là duy nhất)." },
+            { name: "registration_date", type: "NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Ngày người dùng đăng ký tài khoản." },
+            { name: "last_login_date", type: "", details: "Ngày đăng nhập cuối cùng của người dùng." },
+            { name: "status", type: "NOT NULL, DEFAULT 'active'", details: "Trạng thái tài khoản (ví dụ: 'active', 'inactive', 'suspended'). CHECK (`status` IN ('active', 'inactive', 'suspended'))" },
+            { name: "role", type: "NOT NULL", details: "Vai trò của người dùng. CHECK (`role` IN ('buyer', 'seller', 'admin'))" }
+        ]
+    },
+    "Sellers": {
+        name: "Người bán (Seller)",
+        description: "Bảng này mở rộng thông tin cho người dùng có vai trò là người bán, chứa các thuộc tính đặc thù của nhà cung cấp.",
+        attributes: [
+            { name: "seller_id", type: "PK, FK (Users.user_id)", details: "Mã định danh người bán, liên kết với Users." },
+            { name: "store_name", type: "NOT NULL", details: "Tên cửa hàng hoặc thương hiệu." },
+            { name: "store_description", type: "", details: "Mô tả chi tiết về cửa hàng." },
+            { name: "bank_account_details", type: "", details: "Thông tin tài khoản ngân hàng (cần mã hóa)." },
+            { name: "tax_id", type: "UNIQUE", details: "Mã số thuế (nếu có, thường là duy nhất)." },
+            { name: "seller_rating", type: "DEFAULT 0", details: "Điểm đánh giá trung bình. CHECK (`seller_rating` >= 0 AND `seller_rating` <= 5)" },
+            { name: "join_date", type: "NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Ngày người bán tham gia." },
+            { name: "is_verified", type: "BOOLEAN, DEFAULT FALSE", details: "Trạng thái xác minh." }
+        ]
+    },
+    "Admins": {
+        name: "Quản trị viên (Admin)",
+        description: "Bảng này mở rộng thông tin cho người dùng có vai trò là quản trị viên.",
+        attributes: [
+            { name: "admin_id", type: "PK, FK (Users.user_id)", details: "Mã định danh quản trị viên, liên kết với Users." },
+            { name: "permissions", type: "", details: "Quyền hạn cụ thể (ví dụ: JSON hoặc text, có thể tham chiếu bảng Permissions riêng)." },
+            { name: "last_action_log", type: "", details: "Nhật ký hành động cuối cùng." }
+        ]
+    },
+    "Addresses": {
+        name: "Địa chỉ (Address)",
+        description: "Lưu trữ địa chỉ thanh toán và giao hàng của khách hàng.",
+        attributes: [
+            { name: "address_id", type: "PK", details: "Mã định danh duy nhất cho địa chỉ." },
+            { name: "user_id", type: "FK (Users.user_id), NOT NULL", details: "Liên kết với người dùng sở hữu địa chỉ." },
+            { name: "street_address", type: "NOT NULL", details: "Số nhà, tên đường." },
+            { name: "city", type: "NOT NULL", details: "Thành phố." },
+            { name: "state", type: "NOT NULL", details: "Tỉnh/Bang." },
+            { name: "postal_code", type: "NOT NULL", details: "Mã bưu chính." },
+            { name: "country", type: "NOT NULL", details: "Quốc gia." },
+            { name: "address_type", type: "NOT NULL", details: "Loại địa chỉ. CHECK (`address_type` IN ('shipping', 'billing', 'home', 'work'))" },
+            { name: "is_default", type: "BOOLEAN, DEFAULT FALSE", details: "Cờ chỉ định địa chỉ mặc định." }
+        ]
+    },
+    "Categories": {
+        name: "Danh mục (Category)",
+        description: "Tổ chức các danh mục sản phẩm, giúp người dùng dễ dàng điều hướng.",
+        attributes: [
+            { name: "category_id", type: "PK", details: "Mã định danh duy nhất cho danh mục." },
+            { name: "name", type: "UNIQUE, NOT NULL", details: "Tên danh mục, phải là duy nhất." },
+            { name: "description", type: "", details: "Mô tả danh mục." },
+            { name: "parent_category_id", type: "FK (Categories.category_id)", details: "Cho phép cấu trúc danh mục phân cấp (có thể NULL)." }
+        ]
+    },
+    "Products": {
+        name: "Sản phẩm (Product)",
+        description: "Lưu trữ thông tin chi tiết của tất cả các sản phẩm được bán trên nền tảng.",
+        attributes: [
+            { name: "product_id", type: "PK", details: "Mã định danh duy nhất cho sản phẩm." },
+            { name: "seller_id", type: "FK (Sellers.seller_id), NOT NULL", details: "Liên kết sản phẩm với người bán." },
+            { name: "category_id", type: "FK (Categories.category_id), NOT NULL", details: "Liên kết sản phẩm với danh mục." },
+            { name: "name", type: "NOT NULL", details: "Tên sản phẩm." },
+            { name: "sku", type: "UNIQUE", details: "Mã SKU (Stock Keeping Unit), nếu có, phải là duy nhất." },
+            { name: "description", type: "", details: "Mô tả chi tiết sản phẩm." },
+            { name: "price", type: "DECIMAL(10,2), NOT NULL", details: "Giá bán của sản phẩm. CHECK (`price` > 0)" },
+            { name: "original_price", type: "DECIMAL(10,2)", details: "Giá gốc trước chiết khấu. CHECK (`original_price` IS NULL OR `original_price` > 0)" },
+            { name: "stock_quantity", type: "INTEGER, NOT NULL, DEFAULT 0", details: "Số lượng sản phẩm còn trong kho (tổng hợp từ Inventory_Lot). CHECK (`stock_quantity` >= 0)" },
+            { name: "image_url", type: "", details: "Đường dẫn đến hình ảnh chính." },
+            { name: "status", type: "NOT NULL, DEFAULT 'available'", details: "Trạng thái sản phẩm. CHECK (`status` IN ('available', 'out_of_stock', 'discontinued', 'hidden'))" },
+            { name: "is_recyclable", type: "BOOLEAN, NOT NULL, DEFAULT FALSE", details: "Cờ chỉ định sản phẩm có thể tái chế/chuyển đổi thành sản phẩm khác hay không." },
+            { name: "created_at", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Thời gian tạo." },
+            { name: "updated_at", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP", details: "Thời gian cập nhật." }
+        ]
+    },
+    "Orders": {
+        name: "Đơn hàng (Order)",
+        description: "Quản lý và xử lý đơn hàng của khách hàng.",
+        attributes: [
+            { name: "order_id", type: "PK", details: "Mã định danh duy nhất cho mỗi đơn hàng." },
+            { name: "user_id", type: "FK (Users.user_id), NOT NULL", details: "Liên kết đơn hàng với người dùng đặt hàng." },
+            { name: "order_date", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Ngày và giờ đặt hàng." },
+            { name: "total_amount", type: "DECIMAL(12,2), NOT NULL", details: "Tổng giá trị của đơn hàng. CHECK (`total_amount` >= 0)" },
+            { name: "status", type: "NOT NULL, DEFAULT 'pending'", details: "Trạng thái đơn hàng. CHECK (`status` IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'))" },
+            { name: "shipping_address_id", type: "FK (Addresses.address_id), NOT NULL", details: "Địa chỉ giao hàng." },
+            { name: "billing_address_id", type: "FK (Addresses.address_id), NOT NULL", details: "Địa chỉ thanh toán." },
+            { name: "payment_method_id", type: "FK (PaymentMethods.method_id)", details: "Phương thức thanh toán." },
+            { name: "notes", type: "TEXT", details: "Ghi chú thêm về đơn hàng." }
+        ]
+    },
+    "Order_Items": {
+        name: "Chi tiết Đơn hàng (Order Item)",
+        description: "Chứa thông tin chi tiết của từng mặt hàng trong một đơn hàng.",
+        attributes: [
+            { name: "order_item_id", type: "PK", details: "Mã định danh duy nhất cho chi tiết đơn hàng." },
+            { name: "order_id", type: "FK (Orders.order_id), NOT NULL", details: "Liên kết với đơn hàng." },
+            { name: "product_id", type: "FK (Products.product_id), NOT NULL", details: "Liên kết với sản phẩm." },
+            { name: "quantity", type: "INTEGER, NOT NULL", details: "Số lượng sản phẩm đặt. CHECK (`quantity` > 0)" },
+            { name: "price_at_purchase", type: "DECIMAL(10,2), NOT NULL", details: "Giá sản phẩm tại thời điểm mua. CHECK (`price_at_purchase` > 0)" },
+            { name: "seller_id", type: "FK (Sellers.seller_id), NOT NULL", details: "Người bán của sản phẩm này trong đơn hàng." }
+        ]
+    },
+    "Payment_Methods": {
+        name: "Phương thức Thanh toán (Payment Method)",
+        description: "Lưu trữ thông tin về các phương thức thanh toán khác nhau.",
+        attributes: [
+            { name: "method_id", type: "PK", details: "Mã định danh duy nhất." },
+            { name: "name", type: "VARCHAR(50), UNIQUE, NOT NULL", details: "Tên phương thức (ví dụ: 'Credit Card', 'PayPal')." },
+            { name: "description", type: "TEXT", details: "Mô tả chi tiết." },
+            { name: "is_active", type: "BOOLEAN, NOT NULL, DEFAULT TRUE", details: "Cờ chỉ định phương thức có hoạt động không." }
+        ]
+    },
+    "Payments": {
+        name: "Thanh toán (Payment)",
+        description: "Lưu trữ thông tin chi tiết về từng giao dịch thanh toán thực tế.",
+        attributes: [
+            { name: "payment_id", type: "PK", details: "Mã định danh duy nhất cho giao dịch." },
+            { name: "order_id", type: "FK (Orders.order_id), UNIQUE, NOT NULL", details: "Liên kết với đơn hàng (thường là 1:1 với Order)." },
+            { name: "method_id", type: "FK (PaymentMethods.method_id), NOT NULL", details: "Phương thức thanh toán sử dụng." },
+            { name: "amount", type: "DECIMAL(12,2), NOT NULL", details: "Số tiền đã thanh toán. CHECK (`amount` > 0)" },
+            { name: "payment_date", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Ngày và giờ thanh toán." },
+            { name: "status", type: "VARCHAR(20), NOT NULL", details: "Trạng thái thanh toán. CHECK (`status` IN ('pending', 'completed', 'failed', 'refunded'))" },
+            { name: "transaction_id_gateway", type: "VARCHAR(255), UNIQUE", details: "Mã giao dịch từ cổng thanh toán (nếu có, thường là duy nhất)." },
+            { name: "user_id", type: "FK (Users.user_id), NOT NULL", details: "Người dùng thực hiện thanh toán." }
+        ]
+    },
+    "Delivery_Partners": {
+        name: "Đơn vị Vận chuyển (Delivery Partner)",
+        description: "Lưu trữ thông tin về các đối tác vận chuyển.",
+        attributes: [
+            { name: "partner_id", type: "PK", details: "Mã định danh duy nhất." },
+            { name: "name", type: "VARCHAR(100), UNIQUE, NOT NULL", details: "Tên đơn vị vận chuyển." },
+            { name: "contact_person", type: "VARCHAR(100)", details: "Người liên hệ." },
+            { name: "phone_number", type: "VARCHAR(20), UNIQUE", details: "Số điện thoại." },
+            { name: "email", type: "VARCHAR(100), UNIQUE", details: "Địa chỉ email." },
+            { name: "service_area", type: "TEXT", details: "Khu vực hoạt động." },
+            { name: "rating", type: "DECIMAL(2,1)", details: "Đánh giá trung bình. CHECK (`rating` IS NULL OR (`rating` >= 0 AND `rating` <= 5))" }
+        ]
+    },
+    "Shipments": {
+        name: "Vận chuyển (Shipment)",
+        description: "Theo dõi thông tin chi tiết về từng lô hàng được giao.",
+        attributes: [
+            { name: "shipment_id", type: "PK", details: "Mã định danh duy nhất cho lô hàng." },
+            { name: "order_id", type: "FK (Orders.order_id), NOT NULL", details: "Liên kết với đơn hàng." },
+            { name: "delivery_partner_id", type: "FK (DeliveryPartners.partner_id)", details: "Đơn vị vận chuyển chịu trách nhiệm." },
+            { name: "tracking_number", type: "VARCHAR(100), UNIQUE", details: "Mã theo dõi lô hàng (thường là duy nhất)." },
+            { name: "shipping_date", type: "TIMESTAMP", details: "Ngày gửi hàng." },
+            { name: "estimated_delivery_date", type: "DATE", details: "Ngày giao dự kiến." },
+            { name: "actual_delivery_date", type: "DATE", details: "Ngày giao thực tế." },
+            { name: "status", type: "VARCHAR(50), NOT NULL", details: "Trạng thái vận chuyển. CHECK (`status` IN ('pending_pickup', 'in_transit', 'out_for_delivery', 'delivered', 'failed_delivery', 'returned'))" },
+            { name: "shipping_cost", type: "DECIMAL(10,2)", details: "Chi phí vận chuyển. CHECK (`shipping_cost` IS NULL OR `shipping_cost` >= 0)" },
+            { name: "shipping_address_id", type: "FK (Addresses.address_id), NOT NULL", details: "Địa chỉ giao hàng." }
+        ]
+    },
+    "Inventory_Lot": {
+        name: "Lô Hàng Tồn Kho (Inventory_Lot)",
+        description: "Lưu trữ thông tin chi tiết về từng lô hàng tồn kho của sản phẩm, bao gồm hạn sử dụng.",
+        attributes: [
+            { name: "lot_id", type: "PK", details: "Mã định danh duy nhất cho mỗi lô hàng tồn kho." },
+            { name: "product_id", type: "FK (Products.product_id), NOT NULL", details: "Liên kết với sản phẩm mà lô hàng này thuộc về." },
+            { name: "seller_id", type: "FK (Sellers.seller_id), NOT NULL", details: "Người bán sở hữu lô hàng này." },
+            { name: "quantity_in_lot", type: "INTEGER, NOT NULL", details: "Số lượng sản phẩm trong lô này. CHECK (`quantity_in_lot` >= 0)" },
+            { name: "received_date", type: "DATE", details: "Ngày nhận lô hàng vào kho." },
+            { name: "manufacturing_date", type: "DATE", details: "Ngày sản xuất của lô hàng (nếu có)." },
+            { name: "expiration_date", type: "DATE, NOT NULL", details: "Ngày hết hạn của lô sản phẩm." },
+            { name: "status", type: "VARCHAR(50), DEFAULT 'available'", details: "Trạng thái của lô hàng. CHECK (`status` IN ('available', 'nearing_expiry', 'expired', 'repurposed', 'sold_out'))" },
+            { name: "cost_price_per_unit", type: "DECIMAL(10,2)", details: "Giá vốn mỗi đơn vị của lô hàng này (để tính toán lợi nhuận)." },
+            { name: "location_in_warehouse", type: "VARCHAR(100)", details: "Vị trí lưu trữ cụ thể trong kho." }
+        ]
+    },
+    "Product_Transformation": {
+        name: "Chuyển Đổi Sản Phẩm (Product_Transformation)",
+        description: "Ghi lại các giao dịch chuyển đổi sản phẩm, đặc biệt là từ sản phẩm gốc sang sản phẩm tái chế/mới.",
+        attributes: [
+            { name: "transformation_id", type: "PK", details: "Mã định danh duy nhất cho mỗi giao dịch chuyển đổi." },
+            { name: "source_lot_id", type: "FK (Inventory_Lot.lot_id), NOT NULL", details: "Lô hàng gốc được sử dụng để chuyển đổi." },
+            { name: "source_product_id", type: "FK (Products.product_id), NOT NULL", details: "Sản phẩm gốc được chuyển đổi (để dễ truy vấn)." },
+            { name: "quantity_transformed", type: "INTEGER, NOT NULL", details: "Số lượng sản phẩm gốc đã sử dụng trong quá trình chuyển đổi. CHECK (`quantity_transformed` > 0)" },
+            { name: "derived_product_id", type: "FK (Products.product_id), NOT NULL", details: "Sản phẩm mới được tạo ra sau chuyển đổi (cũng là một Product trong bảng Products)." },
+            { name: "derived_quantity_produced", type: "INTEGER, NOT NULL", details: "Số lượng sản phẩm mới được tạo ra. CHECK (`derived_quantity_produced` > 0)" },
+            { name: "transformation_date", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Ngày và giờ thực hiện chuyển đổi." },
+            { name: "reason", type: "TEXT", details: "Lý do chuyển đổi (ví dụ: 'nearing_expiry', 'damaged_packaging_repurposed')." },
+            { name: "transformed_by_user_id", type: "FK (Users.user_id)", details: "Người dùng (admin/seller) thực hiện chuyển đổi." },
+            { name: "notes", type: "TEXT", details: "Ghi chú thêm về quá trình chuyển đổi." }
+        ]
+    }
+};
+
+const relationshipsData = [
+    { name: "Users - Addresses", type: "1:N", from: "Users", to: "Addresses", details: "Một người dùng có thể có nhiều địa chỉ. `Addresses.user_id` (FK) -> `Users.user_id` (PK)." },
+    { name: "Users - Sellers", type: "1:1 (hoặc 1:0..1)", from: "Users", to: "Sellers", details: "Một người dùng có thể là một người bán. `Sellers.seller_id` (PK, FK) -> `Users.user_id` (PK)." },
+    { name: "Users - Admins", type: "1:1 (hoặc 1:0..1)", from: "Users", to: "Admins", details: "Một người dùng có thể là một quản trị viên. `Admins.admin_id` (PK, FK) -> `Users.user_id` (PK)." },
+    { name: "Users - Orders", type: "1:N", from: "Users", to: "Orders", details: "Một người dùng (người mua) có thể đặt nhiều đơn hàng. `Orders.user_id` (FK) -> `Users.user_id` (PK)." },
+    { name: "Sellers - Products", type: "1:N", from: "Sellers", to: "Products", details: "Một người bán có thể bán nhiều sản phẩm. `Products.seller_id` (FK) -> `Sellers.seller_id` (PK)." },
+    { name: "Categories - Products", type: "1:N", from: "Categories", to: "Products", details: "Một danh mục có thể chứa nhiều sản phẩm. `Products.category_id` (FK) -> `Categories.category_id` (PK)." },
+    { name: "Orders - Order_Items", type: "1:N", from: "Orders", to: "Order_Items", details: "Một đơn hàng có thể bao gồm nhiều mặt hàng. `Order_Items.order_id` (FK) -> `Orders.order_id` (PK)." },
+    { name: "Products - Order_Items", type: "M:N (qua Order_Items)", from: "Products", to: "Order_Items", details: "Một sản phẩm có thể xuất hiện trong nhiều chi tiết đơn hàng. `Order_Items.product_id` (FK) -> `Products.product_id` (PK)." },
+    { name: "Orders - Payments", type: "1:1", from: "Orders", to: "Payments", details: "Mỗi đơn hàng thường liên kết với một giao dịch thanh toán. `Payments.order_id` (FK, UNIQUE) -> `Orders.order_id` (PK)." },
+    { name: "Payment_Methods - Payments", type: "1:N", from: "Payment_Methods", to: "Payments", details: "Một phương thức thanh toán có thể được sử dụng cho nhiều giao dịch. `Payments.method_id` (FK) -> `Payment_Methods.method_id` (PK)." },
+    { name: "Orders - Shipments", type: "1:N", from: "Orders", to: "Shipments", details: "Một đơn hàng có thể có một hoặc nhiều lô hàng. `Shipments.order_id` (FK) -> `Orders.order_id` (PK)." },
+    { name: "Delivery_Partners - Shipments", type: "1:N", from: "Delivery_Partners", to: "Shipments", details: "Một đơn vị vận chuyển có thể xử lý nhiều lô hàng. `Shipments.delivery_partner_id` (FK) -> `Delivery_Partners.partner_id` (PK)." },
+    { name: "Products - Inventory_Lot", type: "1:N", from: "Products", to: "Inventory_Lot", details: "Một loại sản phẩm có thể có nhiều lô hàng tồn kho. `Inventory_Lot.product_id` (FK) -> `Products.product_id` (PK)." },
+    { name: "Inventory_Lot - Product_Transformation (Source)", type: "1:N", from: "Inventory_Lot", to: "Product_Transformation", details: "Một lô hàng tồn kho có thể là nguồn cho nhiều lần chuyển đổi. `Product_Transformation.source_lot_id` (FK) -> `Inventory_Lot.lot_id` (PK)." },
+    { name: "Products (Source) - Product_Transformation", type: "1:N", from: "Products", to: "Product_Transformation", details: "Một loại sản phẩm gốc có thể là nguồn cho nhiều giao dịch chuyển đổi. `Product_Transformation.source_product_id` (FK) -> `Products.product_id` (PK)." },
+    { name: "Products (Derived) - Product_Transformation", type: "1:N", from: "Products", to: "Product_Transformation", details: "Một loại sản phẩm (được tái chế/chuyển đổi) có thể là kết quả của nhiều giao dịch chuyển đổi. `Product_Transformation.derived_product_id` (FK) -> `Products.product_id` (PK)." }
+];
+
+const principlesData = [
+    { 
+        title: "4.1. Chuẩn hóa cơ sở dữ liệu (Normalization)",
+        content: `
+            <p class="mb-2">Chuẩn hóa là quá trình tổ chức các cột và bảng để giảm thiểu dư thừa dữ liệu và cải thiện tính toàn vẹn.</p>
+            <p class="mb-2"><strong>Lợi ích:</strong> Giảm dư thừa, cải thiện toàn vẹn, ngăn chặn bất thường dữ liệu, tối ưu hóa cấu trúc và truy vấn.</p>
+            <p class="font-semibold mt-3 mb-1">Các dạng chuẩn hóa chính:</p>
+            <ul class="list-disc list-inside ml-4 space-y-1">
+                <li><strong>1NF (First Normal Form):</strong> Mỗi ô chứa một giá trị đơn, không nhóm lặp lại, mỗi cột tên duy nhất.</li>
+                <li><strong>2NF (Second Normal Form):</strong> Ở dạng 1NF, tất cả thuộc tính không khóa phụ thuộc hoàn toàn vào toàn bộ khóa chính.</li>
+                <li><strong>3NF (Third Normal Form):</strong> Ở dạng 2NF, không có sự phụ thuộc bắc cầu.</li>
+            </ul>
+            <p class="mt-2"><strong>Đánh đổi:</strong> Có thể tạo nhiều bảng hơn, yêu cầu nhiều JOIN, đôi khi ảnh hưởng hiệu suất. Cần cân bằng.</p>
+        `
+    },
+    { 
+        title: "4.2. Khả năng mở rộng (Scalability)",
+        content: `
+            <p class="mb-2">Khả năng của hệ thống để xử lý khối lượng công việc tăng hoặc dữ liệu lớn hơn mà vẫn duy trì hiệu suất.</p>
+            <p class="font-semibold mt-3 mb-1">Giải pháp:</p>
+            <ul class="list-disc list-inside ml-4 space-y-1">
+                <li><strong>Mở rộng theo chiều dọc (Vertical Scaling):</strong> Tăng CPU, RAM, lưu trữ cho một máy chủ.</li>
+                <li><strong>Mở rộng theo chiều ngang (Horizontal Scaling / Sharding):</strong> Phân tán khối lượng công việc trên nhiều máy chủ.</li>
+                <li><strong>Cụm cơ sở dữ liệu (Database Clustering):</strong> Phân phối dữ liệu, cân bằng tải, tăng khả năng chịu lỗi.</li>
+                <li><strong>Sử dụng dịch vụ đám mây (Cloud Services):</strong> Linh hoạt thêm/bớt tài nguyên.</li>
+            </ul>
+        `
+    },
+    { 
+        title: "4.3. Bảo mật dữ liệu (Security)",
+        content: `
+            <p class="mb-2">Tối quan trọng do tính nhạy cảm của thông tin khách hàng.</p>
+            <p class="font-semibold mt-3 mb-1">Thực tiễn tốt nhất:</p>
+            <ul class="list-disc list-inside ml-4 space-y-1">
+                <li>Chọn nền tảng an toàn, tuân thủ PCI DSS.</li>
+                <li>Triển khai chứng chỉ SSL/TLS.</li>
+                <li>Kích hoạt xác thực hai yếu tố (2FA).</li>
+                <li>Sử dụng tường lửa, phần mềm chống mã độc.</li>
+                <li>Kiểm soát truy cập chặt chẽ và mã hóa dữ liệu.</li>
+            </ul>
+        `
+    },
+    { 
+        title: "4.4. Tối ưu hóa hiệu suất (Performance Optimization)",
+        content: `
+            <p class="mb-2">Then chốt cho trải nghiệm người dùng. Trang chậm dẫn đến tỷ lệ thoát cao.</p>
+            <p class="font-semibold mt-3 mb-1">Giải pháp:</p>
+            <ul class="list-disc list-inside ml-4 space-y-1">
+                <li><strong>Thiết kế lược đồ hiệu quả:</strong> Cân nhắc chuẩn hóa và phi chuẩn hóa.</li>
+                <li><strong>Lập chỉ mục (Indexing):</strong> Giúp định vị dữ liệu nhanh.</li>
+                <li><strong>Tối ưu hóa truy vấn (Query Optimization):</strong> Viết truy vấn hiệu quả, tránh SELECT *.</li>
+                <li><strong>Cơ chế bộ nhớ đệm (Caching Mechanisms):</strong> Giảm tần suất truy cập CSDL (ví dụ: Redis).</li>
+                <li><strong>Bảo trì định kỳ:</strong> Bảo trì chỉ mục, cập nhật thống kê.</li>
+            </ul>
+        `
+    }
+];
+
+const constraintsData = [
+    {
+        name: "PRIMARY KEY (Khóa Chính)",
+        description: "Một cột hoặc một tập hợp các cột xác định duy nhất mỗi hàng trong một bảng. Khóa chính không được chứa giá trị NULL và phải là duy nhất.",
+        howItWorks: "Khi một cột được định nghĩa là khóa chính, DBMS tự động tạo một chỉ mục duy nhất trên cột đó để tăng tốc độ truy vấn và đảm bảo tính duy nhất. Mỗi bảng chỉ có thể có một khóa chính.",
+        examples: [
+            "`Users.user_id` PK: Mỗi người dùng có một mã định danh duy nhất.",
+            "`Products.product_id` PK: Mỗi sản phẩm có một mã định danh duy nhất.",
+            "`Orders.order_id` PK: Mỗi đơn hàng có một mã định danh duy nhất."
+        ]
+    },
+    {
+        name: "FOREIGN KEY (Khóa Ngoại)",
+        description: "Một cột hoặc tập hợp các cột trong một bảng (bảng con) tham chiếu đến khóa chính của một bảng khác (bảng cha). Khóa ngoại thiết lập mối liên kết giữa hai bảng và đảm bảo tính toàn vẹn tham chiếu.",
+        howItWorks: "Đảm bảo rằng mọi giá trị được chèn hoặc cập nhật vào cột khóa ngoại phải tồn tại trong cột khóa chính của bảng cha. Khi xóa/cập nhật bảng cha, DBMS sẽ kiểm tra các hàng liên quan trong bảng con và áp dụng quy tắc hành động (ví dụ: RESTRICT, CASCADE, SET NULL, SET DEFAULT).",
+        examples: [
+            "`Orders.user_id` FK REFERENCES `Users(user_id)`: Mỗi đơn hàng phải thuộc về một người dùng đã tồn tại.",
+            "`Products.category_id` FK REFERENCES `Categories(category_id)`: Mỗi sản phẩm phải thuộc về một danh mục đã tồn tại.",
+            "`Order_Items.product_id` FK REFERENCES `Products(product_id)`: Mỗi mục trong đơn hàng phải là một sản phẩm đã tồn tại."
+        ]
+    },
+    {
+        name: "NOT NULL",
+        description: "Ràng buộc này đảm bảo rằng một cột không thể chứa giá trị NULL (rỗng). Điều này có nghĩa là mỗi hàng phải có một giá trị cụ thể cho cột đó.",
+        howItWorks: "Nếu bạn cố gắng chèn một hàng mới hoặc cập nhật một hàng hiện có mà để trống (NULL) một cột có ràng buộc NOT NULL, thao tác sẽ bị từ chối.",
+        examples: [
+            "`Users.email` NOT NULL: Mỗi người dùng phải có địa chỉ email.",
+            "`Products.name` NOT NULL: Mỗi sản phẩm phải có tên.",
+            "`Orders.order_date` NOT NULL: Mỗi đơn hàng phải có ngày đặt hàng."
+        ]
+    },
+    {
+        name: "UNIQUE",
+        description: "Ràng buộc này đảm bảo rằng tất cả các giá trị trong một cột (hoặc tập hợp các cột) phải là duy nhất. Một bảng có thể có nhiều ràng buộc UNIQUE và cột UNIQUE có thể chứa giá trị NULL (thường chỉ một giá trị NULL duy nhất được phép, tùy DBMS).",
+        howItWorks: "Nếu bạn cố gắng chèn một giá trị đã tồn tại vào một cột có ràng buộc UNIQUE, thao tác sẽ bị từ chối. Khác với PRIMARY KEY, UNIQUE không nhất thiết phải là khóa chính và có thể cho phép NULL.",
+        examples: [
+            "`Users.username` UNIQUE: Tên đăng nhập của mỗi người dùng phải là duy nhất.",
+            "`Categories.name` UNIQUE: Tên mỗi danh mục sản phẩm phải là duy nhất.",
+            "`Products.sku` UNIQUE: Mã SKU của mỗi sản phẩm (nếu có) phải là duy nhất."
+        ]
+    },
+    {
+        name: "CHECK",
+        description: "Ràng buộc CHECK được sử dụng để định nghĩa một điều kiện logic mà dữ liệu trong một cột (hoặc nhiều cột) phải thỏa mãn. Điều kiện này được đánh giá mỗi khi dữ liệu được chèn hoặc cập nhật.",
+        howItWorks: "Mỗi khi một hàng được chèn hoặc cập nhật, điều kiện trong CHECK sẽ được tự động kiểm tra. Nếu điều kiện trả về FALSE, thao tác sẽ bị từ chối.",
+        examples: [
+            "`Products.price` CHECK (`price` > 0): Đảm bảo giá sản phẩm luôn là một số dương.",
+            "`Order_Items.quantity` CHECK (`quantity` > 0): Đảm bảo số lượng sản phẩm trong đơn hàng luôn lớn hơn 0.",
+            "`Users.role` CHECK (`role` IN ('buyer', 'seller', 'admin')): Đảm bảo vai trò người dùng chỉ thuộc một trong các giá trị hợp lệ."
+        ]
+    },
+    {
+        name: "DEFAULT",
+        description: "Ràng buộc DEFAULT được sử dụng để cung cấp một giá trị mặc định cho một cột nếu không có giá trị nào được chỉ định khi chèn một hàng mới.",
+        howItWorks: "Nếu một cột có ràng buộc DEFAULT bị bỏ qua trong câu lệnh INSERT, cơ sở dữ liệu sẽ tự động sử dụng giá trị mặc định đã định nghĩa cho cột đó.",
+        examples: [
+            "`Orders.status` DEFAULT 'pending': Nếu không chỉ định, trạng thái đơn hàng mặc định là 'pending'.",
+            "`Users.registration_date` DEFAULT CURRENT_TIMESTAMP: Ngày đăng ký mặc định là thời điểm hiện tại.",
+            "`Products.stock_quantity` DEFAULT 0: Số lượng tồn kho mặc định là 0 nếu không được cung cấp."
+        ]
+    }
+];
+
+const expirationRepurposingData = {
+    problem: {
+        title: "Bài toán: Quản lý Hạn sử dụng và Tái chế sản phẩm",
+        description: "Trong một số ngành hàng (ví dụ: thực phẩm, dược phẩm), sản phẩm có hạn sử dụng nhất định. Khi sản phẩm gần hết hạn, có thể cần chuyển đổi chúng thành sản phẩm khác (ví dụ: cà rốt tươi thành nước ép cà rốt) để tránh lãng phí và tạo ra giá trị mới."
+    },
+    expirationSolution: {
+        title: "Giải pháp cho Hạn sử dụng: Bảng `Inventory_Lot`",
+        description: "Để quản lý hạn sử dụng một cách chính xác, đặc biệt khi cùng một sản phẩm có thể có nhiều lô hàng với các hạn sử dụng khác nhau, việc tạo một bảng riêng là cần thiết.",
+        table: {
+            name: "Inventory_Lot (Lô Hàng Tồn Kho)",
+            attributes: [
+                { name: "lot_id", type: "PK", details: "Mã định danh duy nhất cho mỗi lô hàng tồn kho." },
+                { name: "product_id", type: "FK (Products.product_id), NOT NULL", details: "Liên kết với sản phẩm mà lô hàng này thuộc về." },
+                { name: "seller_id", type: "FK (Sellers.seller_id), NOT NULL", details: "Người bán sở hữu lô hàng này." },
+                { name: "quantity_in_lot", type: "INTEGER, NOT NULL", details: "Số lượng sản phẩm trong lô này. CHECK (`quantity_in_lot` >= 0)" },
+                { name: "received_date", type: "DATE", details: "Ngày nhận lô hàng vào kho." },
+                { name: "manufacturing_date", type: "DATE", details: "Ngày sản xuất của lô hàng (nếu có)." },
+                { name: "expiration_date", type: "DATE, NOT NULL", details: "Ngày hết hạn của lô sản phẩm." },
+                { name: "status", type: "VARCHAR(50), DEFAULT 'available'", details: "Trạng thái của lô hàng. CHECK (`status` IN ('available', 'nearing_expiry', 'expired', 'repurposed', 'sold_out'))" },
+                { name: "cost_price_per_unit", type: "DECIMAL(10,2)", details: "Giá vốn mỗi đơn vị của lô hàng này (nếu cần theo dõi FIFO/LIFO)." },
+                { name: "location_in_warehouse", type: "VARCHAR(100)", details: "Vị trí lưu trữ cụ thể trong kho." }
+            ]
+        },
+        explanation: "Việc tách `expiration_date` ra khỏi bảng `Products` và đưa vào `Inventory_Lot` giúp quản lý chi tiết từng lô sản phẩm. Một sản phẩm (ví dụ: sữa) có thể có nhiều lô khác nhau, mỗi lô có ngày sản xuất và hạn sử dụng riêng. Điều này cho phép hệ thống theo dõi chính xác tồn kho theo hạn sử dụng, cảnh báo khi sản phẩm gần hết hạn, và hỗ trợ các phương pháp quản lý tồn kho như FIFO (First-In, First-Out)."
+    },
+    repurposingSolution: {
+        title: "Giải pháp cho Tái chế/Chuyển đổi sản phẩm: Bảng `Product_Transformation`",
+        description: "Để theo dõi quá trình chuyển đổi sản phẩm (thường là gần hết hạn) thành sản phẩm mới, một bảng riêng sẽ ghi lại các giao dịch này.",
+        table: {
+            name: "Product_Transformation (Chuyển Đổi Sản Phẩm)",
+            attributes: [
+                { name: "transformation_id", type: "PK", details: "Mã định danh duy nhất cho mỗi giao dịch chuyển đổi." },
+                { name: "source_lot_id", type: "FK (Inventory_Lot.lot_id), NOT NULL", details: "Lô hàng gốc được sử dụng để chuyển đổi." },
+                { name: "source_product_id", type: "FK (Products.product_id), NOT NULL", details: "Sản phẩm gốc được chuyển đổi (để dễ truy vấn)." },
+                { name: "quantity_transformed", type: "INTEGER, NOT NULL", details: "Số lượng sản phẩm gốc đã sử dụng trong quá trình chuyển đổi. CHECK (`quantity_transformed` > 0)" },
+                { name: "derived_product_id", type: "FK (Products.product_id), NOT NULL", details: "Sản phẩm mới được tạo ra sau chuyển đổi (cũng là một Product trong bảng Products)." },
+                { name: "derived_quantity_produced", type: "INTEGER, NOT NULL", details: "Số lượng sản phẩm mới được tạo ra. CHECK (`derived_quantity_produced` > 0)" },
+                { name: "transformation_date", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Ngày và giờ thực hiện chuyển đổi." },
+                { name: "reason", type: "TEXT", details: "Lý do chuyển đổi (ví dụ: 'nearing_expiry', 'damaged_packaging_repurposed')." },
+                { name: "transformed_by_user_id", type: "FK (Users.user_id)", details: "Người dùng (admin/seller) thực hiện chuyển đổi." },
+                { name: "notes", type: "TEXT", details: "Ghi chú thêm về quá trình chuyển đổi." }
+            ]
+        },
+        explanation: "Khi một sản phẩm (ví dụ: cà rốt từ một lô gần hết hạn) được chuyển đổi thành sản phẩm khác (nước ép), hệ thống sẽ ghi nhận giao dịch này vào bảng `Product_Transformation`. Đồng thời, số lượng của `source_lot_id` trong `Inventory_Lot` tương ứng sẽ giảm (hoặc trạng thái lô thay đổi), và số lượng của `derived_product_id` sẽ tăng (có thể tạo một lô mới trong `Inventory_Lot` cho sản phẩm mới này với HSD mới nếu có). Điều này giúp duy trì tính toàn vẹn tồn kho và theo dõi chuỗi giá trị của sản phẩm. Quan trọng là, `derived_product_id` là một `product_id` trong chính bảng `Products`, cho phép một sản phẩm gốc có thể tạo ra nhiều loại sản phẩm tái chế khác nhau (ví dụ: cà rốt có thể thành nước ép hoặc thành nguyên liệu súp)."
+    },
+    needForNewTables: {
+        title: "Có cần thiết để tạo bảng mới hay không?",
+        explanation: "<strong>Có, việc tạo các bảng mới như `Inventory_Lot` và `Product_Transformation` là rất cần thiết.</strong><br/>- Nếu chỉ thêm thuộc tính `expiration_date` trực tiếp vào bảng `Products` hiện có, sẽ dẫn đến <strong>vi phạm chuẩn hóa dữ liệu</strong> (cụ thể là 1NF và 2NF nếu một sản phẩm có nhiều lô với HSD khác nhau) và gây ra sự dư thừa, không nhất quán dữ liệu.<br/>- Việc quản lý tồn kho theo lô (batch/lot tracking) là không thể nếu chỉ có một cột `stock_quantity` và `expiration_date` trong bảng `Products`. `Inventory_Lot` cho phép theo dõi chính xác từng lô hàng, hỗ trợ các chiến lược quản lý kho như FIFO/FEFO.<br/>- Đối với việc tái chế, bảng `Product_Transformation` ghi lại một <strong>sự kiện</strong> chuyển đổi. Nếu chỉ thêm thuộc tính vào `Products`, bạn sẽ không thể theo dõi lịch sử chuyển đổi hoặc mối quan hệ phức tạp giữa sản phẩm gốc và sản phẩm phái sinh.<br/>Các bảng riêng biệt giúp quản lý thông tin một cách rõ ràng, chính xác, tuân thủ các dạng chuẩn hóa, và có khả năng mở rộng hơn cho các nghiệp vụ phức tạp như quản lý lô hàng, tồn kho theo hạn sử dụng, truy xuất nguồn gốc và chuỗi cung ứng."
+    }
+};
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    const tabs = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const entityList = document.getElementById('entityList');
+    const entityDetail = document.getElementById('entityDetail');
+    const relationshipList = document.getElementById('relationshipList');
+    const relationshipDetail = document.getElementById('relationshipDetail');
+    const principlesAccordion = document.getElementById('principlesAccordion');
+    const constraintsList = document.getElementById('constraintsList');
+    const mobileMenuButton = document.getElementById('mobileMenuButton');
+    const mainNav = document.getElementById('mainNav');
+
+    mobileMenuButton.addEventListener('click', () => {
+        mainNav.classList.toggle('hidden');
+        mainNav.classList.toggle('md:flex');
+    });
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active', 'text-sky-600', 'border-sky-600'));
+            tabs.forEach(t => t.classList.add('text-stone-100'));
+            tab.classList.add('active', 'text-sky-600', 'border-sky-600');
+            tab.classList.remove('text-stone-100');
+
+            tabContents.forEach(content => content.classList.remove('active'));
+            document.getElementById(tab.dataset.tab).classList.add('active');
+
+            if (window.innerWidth < 768 && !mainNav.classList.contains('hidden')) {
+                 mainNav.classList.add('hidden');
+            }
+        });
+    });
+    document.querySelector('.tab-button.active').classList.add('text-sky-600', 'border-sky-600');
+    document.querySelector('.tab-button.active').classList.remove('text-stone-100');
+
+
+    function populateEntityList() {
+        entityList.innerHTML = ''; // Clear existing list
+        Object.keys(entitiesData).forEach(key => {
+            const listItem = document.createElement('li');
+            listItem.textContent = entitiesData[key].name;
+            listItem.className = 'entity-list-item p-2 hover:bg-emerald-50 cursor-pointer rounded transition-colors duration-150';
+            listItem.dataset.entityKey = key;
+            listItem.addEventListener('click', () => {
+                document.querySelectorAll('.entity-list-item').forEach(item => item.classList.remove('active'));
+                listItem.classList.add('active');
+                displayEntityDetails(key);
+            });
+            entityList.appendChild(listItem);
+        });
+    }
+
+    function displayEntityDetails(key) {
+        const entity = entitiesData[key];
+        if (!entity) {
+            entityDetail.innerHTML = '<p class="text-stone-500 italic">Không tìm thấy thông tin thực thể.</p>';
+            return;
+        }
+        let attributesHtml = entity.attributes.map(attr => `
+            <tr class="hover:bg-stone-50">
+                <td class="py-2 px-3 border-b border-stone-200 font-medium text-stone-700">${attr.name}</td>
+                <td class="py-2 px-3 border-b border-stone-200 text-sm text-sky-600">${attr.type}</td>
+                <td class="py-2 px-3 border-b border-stone-200 text-sm text-stone-600">${attr.details}</td>
             </tr>
-            <tr>
-                <td>1</td>
-                <td>Nguyễn Văn A</td>
+        `).join('');
+
+        entityDetail.innerHTML = `
+            <h3 class="text-xl font-semibold text-emerald-700 mb-2">${entity.name}</h3>
+            <p class="text-sm text-stone-600 mb-4">${entity.description}</p>
+            <h4 class="text-md font-semibold text-emerald-600 mt-4 mb-2">Thuộc tính:</h4>
+            <div class="overflow-x-auto shadow rounded-md">
+                <table class="min-w-full bg-white border border-stone-200">
+                    <thead class="bg-stone-100">
+                        <tr>
+                            <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Tên Thuộc Tính</th>
+                            <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Loại (PK/FK/Ràng buộc)</th>
+                            <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Mô Tả</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-stone-200">
+                        ${attributesHtml}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    function populateRelationshipList() {
+        relationshipList.innerHTML = ''; // Clear existing list
+        relationshipsData.forEach((rel, index) => {
+            const listItem = document.createElement('li');
+            listItem.textContent = rel.name;
+            listItem.className = 'relationship-list-item p-2 hover:bg-sky-50 cursor-pointer rounded transition-colors duration-150';
+            listItem.dataset.relIndex = index;
+            listItem.addEventListener('click', () => {
+                document.querySelectorAll('.relationship-list-item').forEach(item => item.classList.remove('active'));
+                listItem.classList.add('active');
+                displayRelationshipDetails(index);
+            });
+            relationshipList.appendChild(listItem);
+        });
+    }
+
+    function displayRelationshipDetails(index) {
+        const rel = relationshipsData[index];
+        if (!rel) {
+            relationshipDetail.innerHTML = '<p class="text-stone-500 italic">Không tìm thấy thông tin mối quan hệ.</p>';
+            return;
+        }
+        relationshipDetail.innerHTML = `
+            <h3 class="text-xl font-semibold text-sky-700 mb-2">${rel.name}</h3>
+            <p class="text-sm text-stone-600 mb-1"><strong class="text-stone-700">Loại:</strong> ${rel.type}</p>
+            <p class="text-sm text-stone-600 mb-1"><strong class="text-stone-700">Từ Thực thể:</strong> ${rel.from}</p>
+            <p class="text-sm text-stone-600 mb-3"><strong class="text-stone-700">Tới Thực thể:</strong> ${rel.to}</p>
+            <p class="text-sm text-stone-600 leading-relaxed">${rel.details}</p>
+        `;
+    }
+    
+    function populatePrinciples() {
+        principlesAccordion.innerHTML = ''; // Clear existing content
+        principlesData.forEach((principle) => {
+            const div = document.createElement('div');
+            div.className = 'border border-stone-200 rounded-lg overflow-hidden shadow';
+            div.innerHTML = `
+                <button class="accordion-button w-full flex justify-between items-center p-4 bg-stone-50 hover:bg-stone-100 focus:outline-none transition-colors duration-150">
+                    <span class="text-lg font-medium text-sky-700 text-left">${principle.title}</span>
+                    <span class="accordion-icon text-sky-600 transform transition-transform duration-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </span>
+                </button>
+                <div class="accordion-content p-4 border-t border-stone-200 bg-white">
+                    ${principle.content}
+                </div>
+            `;
+            principlesAccordion.appendChild(div);
+        });
+
+        document.querySelectorAll('.accordion-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const content = button.nextElementSibling;
+                const icon = button.querySelector('.accordion-icon');
+                button.classList.toggle('active');
+                icon.classList.toggle('rotate-180');
+
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                    setTimeout(() => {
+                         if (!button.classList.contains('active')) content.style.display = "none";
+                    }, 300);
+                } else {
+                    content.style.display = "block";
+                    content.style.maxHeight = content.scrollHeight + "px";
+                }
+            });
+        });
+    }
+
+    function populateConstraints() {
+        constraintsList.innerHTML = ''; // Clear existing content
+        constraintsData.forEach(constraint => {
+            const constraintDiv = document.createElement('div');
+            constraintDiv.className = 'p-5 border border-blue-200 rounded-lg bg-blue-50 shadow';
+            let examplesHtml = constraint.examples.map(ex => `<li class="text-sm text-stone-700 bg-white p-2 rounded border border-blue-100 shadow-sm">${ex}</li>`).join('');
+            constraintDiv.innerHTML = `
+                <h3 class="text-xl font-semibold text-blue-700 mb-2">${constraint.name}</h3>
+                <p class="text-sm text-stone-700 mb-3 leading-relaxed">${constraint.description}</p>
+                <h4 class="text-md font-semibold text-blue-600 mb-2">Cách hoạt động:</h4>
+                <p class="text-sm text-stone-700 mb-4 leading-relaxed">${constraint.howItWorks}</p>
+                <h4 class="text-md font-semibold text-blue-600 mb-2">Ví dụ:</h4>
+                <ul class="list-none space-y-2">
+                    ${examplesHtml}
+                </ul>
+            `;
+            constraintsList.appendChild(constraintDiv);
+        });
+    }
+
+    function populateExpirationRepurposing() {
+        const data = expirationRepurposingData;
+        document.getElementById('problem-title').textContent = data.problem.title;
+        document.getElementById('problem-description').textContent = data.problem.description;
+
+        document.getElementById('expiration-solution-title').textContent = data.expirationSolution.title;
+        document.getElementById('expiration-solution-description').textContent = data.expirationSolution.description;
+        document.getElementById('inventory-lot-table-name').textContent = data.expirationSolution.table.name;
+        const inventoryLotAttributesBody = document.getElementById('inventory-lot-attributes');
+        inventoryLotAttributesBody.innerHTML = data.expirationSolution.table.attributes.map(attr => `
+            <tr class="hover:bg-stone-50">
+                <td class="py-2 px-3 border-b border-stone-200 font-medium text-stone-700">${attr.name}</td>
+                <td class="py-2 px-3 border-b border-stone-200 text-sm text-sky-600">${attr.type}</td>
+                <td class="py-2 px-3 border-b border-stone-200 text-sm text-stone-600">${attr.details}</td>
             </tr>
-            <tr>
-                <td>2</td>
-                <td>Nguyễn Thị B</td>
+        `).join('');
+        document.getElementById('expiration-solution-explanation').innerHTML = data.expirationSolution.explanation;
+
+        document.getElementById('repurposing-solution-title').textContent = data.repurposingSolution.title;
+        document.getElementById('repurposing-solution-description').textContent = data.repurposingSolution.description;
+        document.getElementById('product-transformation-table-name').textContent = data.repurposingSolution.table.name;
+        const productTransformationAttributesBody = document.getElementById('product-transformation-attributes');
+        productTransformationAttributesBody.innerHTML = data.repurposingSolution.table.attributes.map(attr => `
+            <tr class="hover:bg-stone-50">
+                <td class="py-2 px-3 border-b border-stone-200 font-medium text-stone-700">${attr.name}</td>
+                <td class="py-2 px-3 border-b border-stone-200 text-sm text-sky-600">${attr.type}</td>
+                <td class="py-2 px-3 border-b border-stone-200 text-sm text-stone-600">${attr.details}</td>
             </tr>
-        </table>
-    </div>
-    <div class="open">
-        <h1>CSS</h1>
-    </div>
-    <div class="css">
-        <p class="color">1. color: Để thay đổi màu chữ</p>
-        <p class="fontweight">2. font-weight: Thay đổi độ đậm nhạt của chữ</p>
-        <p class="fontsize">3. font-size: Kích thước của chữ</p>
-        <p class="fontfamily">4. font-family: Thay đổi font chữ</p>
-        <p class="fontstyle">5. font-style: Thay đổi kiểu chữ</p>
-        <p class="textalign">6. text-align: Thay đổi vị trí văn bản</p>
-        <p>4. </p>
-    </div>
+        `).join('');
+        document.getElementById('repurposing-solution-explanation').innerHTML = data.repurposingSolution.explanation;
+        
+        document.getElementById('need-for-new-tables-title').textContent = data.needForNewTables.title;
+        document.getElementById('need-for-new-tables-explanation').innerHTML = data.needForNewTables.explanation;
+    }
+
+    populateEntityList();
+    populateRelationshipList();
+    populatePrinciples();
+    populateConstraints();
+    populateExpirationRepurposing();
+});
+</script>
 </body>
-
 </html>
