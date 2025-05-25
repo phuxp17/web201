@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khám Phá Thiết Kế CSDL eCommerce (Đầy Đủ Tính Năng)</title>
+    <title>Khám Phá Thiết Kế CSDL eCommerce (DBML & SQL Cập Nhật)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Visualization & Content Choices:
         - Report Info: SQL Constraints (PK, FK, NOT NULL, UNIQUE, CHECK, DEFAULT) -> Goal: Inform, Understand Rules -> Presentation: Textual descriptions, bulleted examples per constraint. -> Interaction: Static display within tab. -> Justification: Clear explanation of fundamental DB rules. Method: HTML/CSS.
-        - Report Info: Product Expiration & Repurposing (refined) -> Goal: Problem/Solution Analysis, Understand Advanced Modeling -> Presentation: Problem statement, proposed new/updated table structures (Products with 'is_recyclable', Inventory_Lot, Product_Transformation) with attributes listed in HTML tables, and textual explanations for their necessity, emphasizing derived products are also in 'Products' table. -> Interaction: Static display. -> Justification: Addresses specific user query about advanced e-commerce DB scenarios, promotes understanding of normalization and detailed tracking. Method: HTML/CSS tables for schema.
-        - Report Info: Product Reviews -> Goal: Inform, Understand Business Logic -> Presentation: New entity Product_Reviews with attributes and explanation of purchase-based review logic. -> Interaction: Static display. -> Justification: Addresses user request for review system. Method: HTML/CSS table.
-        - Report Info: Sales & Coupons -> Goal: Inform, Understand Business Logic -> Presentation: New entities Sales and Coupons with detailed attributes and their specific functionalities (dates, limits, scope). -> Interaction: Static display. -> Justification: Addresses user request for promotion systems. Method: HTML/CSS tables.
+        - Report Info: Product Expiration & Repurposing (revised) -> Goal: Problem/Solution Analysis, Understand Advanced Modeling -> Presentation: Problem statement, updated table structures (Products with 'ImportDate', 'ExpirationDate', ProductTransformations linking directly to Products) with attributes listed in HTML tables, and textual explanations for their necessity. -> Interaction: Static display. -> Justification: Adheres to user's new DBML, clarifies direct product-to-product transformation. Method: HTML/CSS tables for schema.
+        - Report Info: Product Reviews -> Goal: Inform, Understand Business Logic -> Presentation: Entity Product_Reviews with attributes and explanation of purchase-based review logic. -> Interaction: Static display. -> Justification: Addresses user request. Method: HTML/CSS table.
+        - Report Info: Sales & Coupons -> Goal: Inform, Understand Business Logic -> Presentation: Entities Sales and Coupons with detailed attributes and their specific functionalities. -> Interaction: Static display. -> Justification: Addresses user request. Method: HTML/CSS tables.
+        - Report Info: Full SQL Schema -> Goal: Provide executable SQL -> Presentation: Pre-formatted SQL CREATE TABLE statements in a code block. -> Interaction: Copyable text. -> Justification: Direct user request for SQL. Method: HTML pre/code.
         - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
     -->
     <style>
@@ -82,6 +83,16 @@
             padding: 0.75rem; /* p-3 */
             vertical-align: top;
         }
+        pre {
+            background-color: #1a202c; /* gray-900 */
+            color: #e2e8f0; /* gray-200 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body class="bg-stone-100 text-stone-800">
@@ -102,6 +113,7 @@
                 <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="expiration-repurpose">♻️ HSD & Tái Chế</button>
                 <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="product-reviews">⭐ Đánh Giá SP</button>
                 <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="promotions-coupons">🎁 Khuyến Mãi & Coupon</button>
+                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="sql-schema">📄 Lược Đồ SQL</button>
             </nav>
         </div>
     </header>
@@ -172,7 +184,7 @@
                     <h3 class="text-xl font-semibold text-sky-600 mb-3" id="expiration-solution-title"></h3>
                     <p class="mb-4 text-stone-700 leading-relaxed" id="expiration-solution-description"></p>
                     <div class="p-4 border border-emerald-200 rounded-lg bg-emerald-50">
-                        <h4 class="text-lg font-semibold text-emerald-700 mb-2" id="inventory-lot-table-name"></h4>
+                        <h4 class="text-lg font-semibold text-emerald-700 mb-2" id="products-hsd-table-name"></h4>
                         <div class="overflow-x-auto shadow rounded-md">
                             <table class="min-w-full bg-white border border-stone-200">
                                 <thead class="bg-stone-100">
@@ -182,7 +194,7 @@
                                         <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Mô Tả</th>
                                     </tr>
                                 </thead>
-                                <tbody id="inventory-lot-attributes" class="divide-y divide-stone-200"></tbody>
+                                <tbody id="products-hsd-attributes" class="divide-y divide-stone-200"></tbody>
                             </table>
                         </div>
                         <p class="mt-4 text-sm text-stone-600 leading-relaxed" id="expiration-solution-explanation"></p>
@@ -222,7 +234,7 @@
                 <h2 class="text-2xl font-semibold text-sky-700 mb-6">V. Đánh Giá Sản Phẩm (Product Reviews)</h2>
                 <p class="mb-4 text-stone-700 leading-relaxed">Hệ thống đánh giá sản phẩm là một tính năng quan trọng giúp người mua đưa ra quyết định thông minh và cung cấp phản hồi có giá trị cho người bán. Để đảm bảo tính xác thực, chỉ những người dùng đã mua sản phẩm mới có thể đánh giá.</p>
                 <div class="p-4 border border-emerald-200 rounded-lg bg-emerald-50 shadow">
-                    <h3 class="text-xl font-semibold text-emerald-700 mb-3">Thực thể: `Product_Reviews`</h3>
+                    <h3 class="text-xl font-semibold text-emerald-700 mb-3">Thực thể: `ProductReviews`</h3>
                     <p class="mb-4 text-stone-700 leading-relaxed">Bảng này lưu trữ thông tin về các đánh giá sản phẩm từ người dùng.</p>
                     <div class="overflow-x-auto shadow rounded-md">
                         <table class="min-w-full bg-white border border-stone-200">
@@ -240,10 +252,10 @@
                     <p class="mt-4 text-sm text-stone-600 leading-relaxed">
                         <strong>Cách hoạt động:</strong>
                         <ul class="list-disc list-inside ml-4 space-y-1">
-                            <li>Khi người dùng mua một sản phẩm trong một đơn hàng, một bản ghi `Order_Item` được tạo.</li>
-                            <li>Người dùng chỉ có thể tạo đánh giá cho một `product_id` cụ thể thông qua một `order_item_id` đã mua. Điều này đảm bảo rằng đánh giá là hợp lệ và liên quan đến một giao dịch mua thực tế.</li>
-                            <li>Ràng buộc `UNIQUE (order_item_id)` đảm bảo mỗi mục sản phẩm trong đơn hàng chỉ được đánh giá một lần.</li>
-                            <li>Trạng thái `status` giúp quản trị viên kiểm duyệt đánh giá trước khi hiển thị công khai.</li>
+                            <li>Khi người dùng mua một sản phẩm trong một đơn hàng, một bản ghi `OrderItem` được tạo.</li>
+                            <li>Người dùng chỉ có thể tạo đánh giá cho một `ProductID` cụ thể thông qua một `OrderItemID` đã mua. Điều này đảm bảo rằng đánh giá là hợp lệ và liên quan đến một giao dịch mua thực tế.</li>
+                            <li>Ràng buộc `UNIQUE (OrderItemID)` đảm bảo mỗi mục sản phẩm trong đơn hàng chỉ được đánh giá một lần.</li>
+                            <li>Trạng thái `Status` giúp quản trị viên kiểm duyệt đánh giá trước khi hiển thị công khai.</li>
                         </ul>
                     </p>
                 </div>
@@ -275,8 +287,8 @@
                         <strong>Cách hoạt động:</strong>
                         <ul class="list-disc list-inside ml-4 space-y-1">
                             <li>`Sales` đại diện cho các sự kiện giảm giá lớn (ví dụ: 'Flash Sale', 'Giảm giá cuối năm').</li>
-                            <li>`discount_type` và `discount_value` xác định mức giảm giá.</li>
-                            <li>`applies_to_scope` và `scope_value` cho phép linh hoạt áp dụng cho toàn bộ sản phẩm, một số danh mục hoặc sản phẩm cụ thể.</li>
+                            <li>`DiscountType` và `DiscountValue` xác định mức giảm giá.</li>
+                            <li>`CategoryID` cho phép áp dụng giảm giá cho một danh mục cụ thể (hoặc NULL nếu áp dụng cho tất cả sản phẩm).</li>
                             <li>Giá cuối cùng của sản phẩm trên sàn sẽ được tính toán dựa trên giá gốc và các chương trình `Sales` đang hoạt động.</li>
                         </ul>
                     </p>
@@ -301,12 +313,23 @@
                     <p class="mt-4 text-sm text-stone-600 leading-relaxed">
                         <strong>Cách hoạt động:</strong>
                         <ul class="list-disc list-inside ml-4 space-y-1">
-                            <li>Người dùng nhập `code` của coupon khi thanh toán.</li>
-                            <li>Hệ thống kiểm tra `start_date`, `expiration_date`, `quantity_available`, `usage_limit_per_customer` và `applies_to_scope` để xác định tính hợp lệ của coupon.</li>
-                            <li>Nếu hợp lệ, `discount_value` sẽ được áp dụng cho đơn hàng. `is_free_shipping` sẽ được kiểm tra để miễn phí vận chuyển.</li>
-                            <li>Khi coupon được sử dụng, `quantity_available` (nếu có) sẽ giảm và lịch sử sử dụng của khách hàng sẽ được ghi lại (có thể trong bảng `User_Coupon_Usage` riêng hoặc trong bảng `Orders`).</li>
+                            <li>Người dùng nhập `Code` của coupon khi thanh toán.</li>
+                            <li>Hệ thống kiểm tra `StartDate`, `ExpirationDate`, `QuantityAvailable`, `UsageLimitPerCustomer` và `CategoryID` để xác định tính hợp lệ của coupon.</li>
+                            <li>Nếu hợp lệ, `DiscountValue` sẽ được áp dụng cho đơn hàng. `IsFreeShipping` sẽ được kiểm tra để miễn phí vận chuyển.</li>
+                            <li>Khi coupon được sử dụng, `QuantityAvailable` (nếu có) sẽ giảm và lịch sử sử dụng của khách hàng sẽ được ghi lại (có thể trong bảng `User_Coupon_Usage` riêng hoặc trong bảng `Orders`).</li>
                         </ul>
                     </p>
+                </div>
+            </div>
+        </div>
+
+        <div id="sql-schema" class="tab-content bg-white shadow-lg rounded-lg">
+            <div class="tab-inner-content">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-6">VII. Lược Đồ SQL (SQL Schema)</h2>
+                <p class="mb-4 text-stone-700 leading-relaxed">Dưới đây là các câu lệnh `CREATE TABLE` cho SQL Server, được tạo ra từ lược đồ DBML bạn đã cung cấp. Bạn có thể sao chép và sử dụng chúng để tạo cơ sở dữ liệu của mình.</p>
+                <div class="relative">
+                    <button id="copySqlButton" class="absolute top-3 right-3 bg-sky-600 text-white p-2 rounded-md hover:bg-sky-700 transition-colors duration-200 text-sm">Sao chép SQL</button>
+                    <pre id="sqlCodeBlock" class="mt-2"></pre>
                 </div>
             </div>
         </div>
@@ -318,337 +341,374 @@
 
 <script>
 const entitiesData = {
-    "Users": {
-        name: "Người dùng (User)",
-        description: "Bảng này lưu trữ thông tin chung cho tất cả các loại người dùng trên nền tảng.",
+    "Roles": {
+        name: "Vai trò (Roles)",
+        description: "Lưu trữ các vai trò người dùng khác nhau trong hệ thống (ví dụ: Buyer, Seller, Admin).",
         attributes: [
-            { name: "user_id", type: "PK", details: "Mã định danh duy nhất cho mỗi người dùng." },
-            { name: "username", type: "UNIQUE, NOT NULL", details: "Tên đăng nhập, phải là duy nhất." },
-            { name: "email", type: "UNIQUE, NOT NULL", details: "Địa chỉ email (duy nhất, dùng cho đăng nhập và liên hệ)." },
-            { name: "password_hash", type: "NOT NULL", details: "Mật khẩu đã băm (để bảo mật)." },
-            { name: "first_name", type: "", details: "Tên của người dùng." },
-            { name: "last_name", type: "", details: "Họ của người dùng." },
-            { name: "phone_number", type: "UNIQUE", details: "Số điện thoại liên hệ (có thể là duy nhất)." },
-            { name: "registration_date", type: "NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Ngày người dùng đăng ký tài khoản." },
-            { name: "last_login_date", type: "", details: "Ngày đăng nhập cuối cùng của người dùng." },
-            { name: "status", type: "NOT NULL, DEFAULT 'active'", details: "Trạng thái tài khoản (ví dụ: 'active', 'inactive', 'suspended'). CHECK (`status` IN ('active', 'inactive', 'suspended'))" },
-            { name: "role", type: "NOT NULL", details: "Vai trò của người dùng. CHECK (`role` IN ('buyer', 'seller', 'admin'))" }
+            { name: "RoleID", type: "PK, increment", details: "Mã định danh duy nhất cho mỗi vai trò." },
+            { name: "RoleName", type: "UNIQUE, NOT NULL", details: "Tên vai trò (ví dụ: 'Buyer', 'Seller', 'Admin')." }
+        ]
+    },
+    "Users": {
+        name: "Người dùng (Users)",
+        description: "Lưu trữ thông tin chung cho tất cả các tài khoản người dùng trên nền tảng.",
+        attributes: [
+            { name: "UserID", type: "PK, increment", details: "Mã định danh duy nhất cho mỗi người dùng." },
+            { name: "Username", type: "UNIQUE, NOT NULL", details: "Tên đăng nhập, phải là duy nhất." },
+            { name: "PasswordHash", type: "NOT NULL", details: "Mật khẩu đã băm (để bảo mật)." },
+            { name: "FirstName", type: "", details: "Tên của người dùng." },
+            { name: "LastName", type: "", details: "Họ của người dùng." },
+            { name: "Email", type: "UNIQUE", details: "Địa chỉ email (duy nhất, dùng cho đăng nhập và liên hệ)." },
+            { name: "PhoneNumber", type: "UNIQUE, NOT NULL", details: "Số điện thoại liên hệ (duy nhất, không rỗng)." },
+            { name: "DateOfBirth", type: "date", details: "Ngày sinh của người dùng." },
+            { name: "ProfilePictureUrl", type: "", details: "Đường dẫn đến ảnh đại diện." },
+            { name: "RoleID", type: "FK (Roles.RoleID), NOT NULL", details: "Liên kết với vai trò của người dùng." },
+            { name: "RegistrationDate", type: "DEFAULT `getdate()`", details: "Ngày người dùng đăng ký tài khoản." },
+            { name: "LastLoginDate", type: "datetime", details: "Ngày đăng nhập cuối cùng của người dùng." },
+            { name: "Status", type: "DEFAULT 'active', NOT NULL", details: "Trạng thái tài khoản ('active', 'inactive', 'suspended')." }
         ]
     },
     "Sellers": {
-        name: "Người bán (Seller)",
-        description: "Bảng này mở rộng thông tin cho người dùng có vai trò là người bán, chứa các thuộc tính đặc thù của nhà cung cấp.",
+        name: "Người bán (Sellers)",
+        description: "Mở rộng thông tin cho người dùng có vai trò là người bán, chứa các thuộc tính đặc thù của nhà cung cấp.",
         attributes: [
-            { name: "seller_id", type: "PK, FK (Users.user_id)", details: "Mã định danh người bán, liên kết với Users." },
-            { name: "store_name", type: "NOT NULL", details: "Tên cửa hàng hoặc thương hiệu." },
-            { name: "store_description", type: "", details: "Mô tả chi tiết về cửa hàng." },
-            { name: "bank_account_details", type: "", details: "Thông tin tài khoản ngân hàng (cần mã hóa)." },
-            { name: "tax_id", type: "UNIQUE", details: "Mã số thuế (nếu có, thường là duy nhất)." },
-            { name: "seller_rating", type: "DEFAULT 0", details: "Điểm đánh giá trung bình. CHECK (`seller_rating` >= 0 AND `seller_rating` <= 5)" },
-            { name: "join_date", type: "NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Ngày người bán tham gia." },
-            { name: "is_verified", type: "BOOLEAN, DEFAULT FALSE", details: "Trạng thái xác minh." }
+            { name: "SellerID", type: "PK, FK (Users.UserID)", details: "Mã định danh người bán, liên kết với Users." },
+            { name: "StoreName", type: "NOT NULL", details: "Tên cửa hàng hoặc thương hiệu." },
+            { name: "StoreDescription", type: "text", details: "Mô tả chi tiết về cửa hàng." },
+            { name: "BankAccountDetails", type: "", details: "Thông tin tài khoản ngân hàng (cần mã hóa)." },
+            { name: "BusinessLicenseNumber", type: "UNIQUE", details: "Số giấy phép kinh doanh (nếu có, phải là duy nhất)." },
+            { name: "SellerRating", type: "decimal(2,1), DEFAULT 0", details: "Điểm đánh giá trung bình (0-5)." },
+            { name: "JoinDate", type: "DEFAULT `getdate()`", details: "Ngày người bán tham gia." },
+            { name: "IsVerified", type: "boolean, DEFAULT false", details: "Trạng thái xác minh tài khoản người bán." }
         ]
     },
-    "Admins": {
-        name: "Quản trị viên (Admin)",
-        description: "Bảng này mở rộng thông tin cho người dùng có vai trò là quản trị viên.",
+    "Cities": {
+        name: "Thành phố (Cities)",
+        description: "Lưu trữ danh sách các thành phố/tỉnh thành.",
         attributes: [
-            { name: "admin_id", type: "PK, FK (Users.user_id)", details: "Mã định danh quản trị viên, liên kết với Users." },
-            { name: "permissions", type: "", details: "Quyền hạn cụ thể (ví dụ: JSON hoặc text, có thể tham chiếu bảng Permissions riêng)." },
-            { name: "last_action_log", type: "", details: "Nhật ký hành động cuối cùng." }
+            { name: "CityID", type: "PK, increment", details: "Mã định danh duy nhất cho thành phố." },
+            { name: "CityName", type: "UNIQUE, NOT NULL", details: "Tên thành phố." }
+        ]
+    },
+    "Districts": {
+        name: "Quận/Huyện (Districts)",
+        description: "Lưu trữ danh sách các quận/huyện thuộc về một thành phố.",
+        attributes: [
+            { name: "DistrictID", type: "PK, increment", details: "Mã định danh duy nhất cho quận/huyện." },
+            { name: "CityID", type: "FK (Cities.CityID), NOT NULL", details: "Liên kết với thành phố." },
+            { name: "DistrictName", type: "NOT NULL", details: "Tên quận/huyện." }
         ]
     },
     "Addresses": {
-        name: "Địa chỉ (Address)",
+        name: "Địa chỉ (Addresses)",
         description: "Lưu trữ địa chỉ thanh toán và giao hàng của khách hàng.",
         attributes: [
-            { name: "address_id", type: "PK", details: "Mã định danh duy nhất cho địa chỉ." },
-            { name: "user_id", type: "FK (Users.user_id), NOT NULL", details: "Liên kết với người dùng sở hữu địa chỉ." },
-            { name: "street_address", type: "NOT NULL", details: "Số nhà, tên đường." },
-            { name: "city", type: "NOT NULL", details: "Thành phố." },
-            { name: "state", type: "NOT NULL", details: "Tỉnh/Bang." },
-            { name: "postal_code", type: "NOT NULL", details: "Mã bưu chính." },
-            { name: "country", type: "NOT NULL", details: "Quốc gia." },
-            { name: "address_type", type: "NOT NULL", details: "Loại địa chỉ. CHECK (`address_type` IN ('shipping', 'billing', 'home', 'work'))" },
-            { name: "is_default", type: "BOOLEAN, DEFAULT FALSE", details: "Cờ chỉ định địa chỉ mặc định." }
+            { name: "AddressID", type: "PK, increment", details: "Mã định danh duy nhất cho địa chỉ." },
+            { name: "UserID", type: "FK (Users.UserID), NOT NULL", details: "Liên kết với người dùng sở hữu địa chỉ." },
+            { name: "StreetAddress", type: "NOT NULL", details: "Số nhà, tên đường." },
+            { name: "CityID", type: "FK (Cities.CityID), NOT NULL", details: "Liên kết với thành phố." },
+            { name: "DistrictID", type: "FK (Districts.DistrictID), NOT NULL", details: "Liên kết với quận/huyện." },
+            { name: "AddressType", type: "NOT NULL, DEFAULT 'shipping'", details: "Loại địa chỉ ('shipping', 'billing', 'home', 'work')." },
+            { name: "IsDefault", type: "boolean, DEFAULT false", details: "Cờ chỉ định địa chỉ mặc định." }
         ]
     },
     "Categories": {
-        name: "Danh mục (Category)",
+        name: "Danh mục (Categories)",
         description: "Tổ chức các danh mục sản phẩm, giúp người dùng dễ dàng điều hướng.",
         attributes: [
-            { name: "category_id", type: "PK", details: "Mã định danh duy nhất cho danh mục." },
-            { name: "name", type: "UNIQUE, NOT NULL", details: "Tên danh mục, phải là duy nhất." },
-            { name: "description", type: "", details: "Mô tả danh mục." },
-            { name: "parent_category_id", type: "FK (Categories.category_id)", details: "Cho phép cấu trúc danh mục phân cấp (có thể NULL)." }
+            { name: "CategoryID", type: "PK, increment", details: "Mã định danh duy nhất cho danh mục." },
+            { name: "Name", type: "UNIQUE, NOT NULL", details: "Tên danh mục, phải là duy nhất." },
+            { name: "Description", type: "text", details: "Mô tả danh mục." },
+            { name: "ParentCategoryID", type: "FK (Categories.CategoryID)", details: "Cho phép cấu trúc danh mục phân cấp (có thể NULL)." }
         ]
     },
     "Products": {
-        name: "Sản phẩm (Product)",
+        name: "Sản phẩm (Products)",
         description: "Lưu trữ thông tin chi tiết của tất cả các sản phẩm được bán trên nền tảng.",
         attributes: [
-            { name: "product_id", type: "PK", details: "Mã định danh duy nhất cho sản phẩm." },
-            { name: "seller_id", type: "FK (Sellers.seller_id), NOT NULL", details: "Liên kết sản phẩm với người bán." },
-            { name: "category_id", type: "FK (Categories.category_id), NOT NULL", details: "Liên kết sản phẩm với danh mục." },
-            { name: "name", type: "NOT NULL", details: "Tên sản phẩm." },
-            { name: "sku", type: "UNIQUE", details: "Mã SKU (Stock Keeping Unit), nếu có, phải là duy nhất." },
-            { name: "description", type: "", details: "Mô tả chi tiết sản phẩm." },
-            { name: "price", type: "DECIMAL(10,2), NOT NULL", details: "Giá bán của sản phẩm. CHECK (`price` > 0)" },
-            { name: "original_price", type: "DECIMAL(10,2)", details: "Giá gốc trước chiết khấu. CHECK (`original_price` IS NULL OR `original_price` > 0)" },
-            { name: "stock_quantity", type: "INTEGER, NOT NULL, DEFAULT 0", details: "Số lượng sản phẩm còn trong kho (tổng hợp từ Inventory_Lot). CHECK (`stock_quantity` >= 0)" },
-            { name: "image_url", type: "", details: "Đường dẫn đến hình ảnh chính." },
-            { name: "status", type: "NOT NULL, DEFAULT 'available'", details: "Trạng thái sản phẩm. CHECK (`status` IN ('available', 'out_of_stock', 'discontinued', 'hidden'))" },
-            { name: "is_recyclable", type: "BOOLEAN, NOT NULL, DEFAULT FALSE", details: "Cờ chỉ định sản phẩm có thể tái chế/chuyển đổi thành sản phẩm khác hay không." },
-            { name: "created_at", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Thời gian tạo." },
-            { name: "updated_at", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP", details: "Thời gian cập nhật." }
+            { name: "ProductID", type: "PK, increment", details: "Mã định danh duy nhất cho sản phẩm." },
+            { name: "SellerID", type: "FK (Sellers.SellerID), NOT NULL", details: "Liên kết sản phẩm với người bán." },
+            { name: "CategoryID", type: "FK (Categories.CategoryID), NOT NULL", details: "Liên kết sản phẩm với danh mục." },
+            { name: "Name", type: "NOT NULL", details: "Tên sản phẩm." },
+            { name: "Description", type: "text", details: "Mô tả chi tiết sản phẩm." },
+            { name: "Price", type: "decimal(18,2), NOT NULL", details: "Giá bán của sản phẩm." },
+            { name: "StockQuantity", type: "default: 0", details: "Số lượng sản phẩm còn trong kho." },
+            { name: "Unit", type: "", details: "Đơn vị tính của sản phẩm (ví dụ: 'cái', 'kg', 'lít')." },
+            { name: "ImageUrl", type: "", details: "Đường dẫn đến hình ảnh chính của sản phẩm." },
+            { name: "Status", type: "NOT NULL, default: 'available'", details: "Trạng thái sản phẩm ('available', 'out_of_stock', 'discontinued', 'hidden')." },
+            { name: "IsRecyclable", type: "boolean, default: false", details: "Cờ chỉ định sản phẩm có thể tái chế/chuyển đổi thành sản phẩm khác hay không." },
+            { name: "ImportDate", type: "date", details: "Ngày nhập sản phẩm vào kho." },
+            { name: "ExpirationDate", type: "date", details: "Ngày hết hạn của sản phẩm." },
+            { name: "CreatedAt", type: "default: `getdate()`", details: "Thời gian tạo bản ghi." },
+            { name: "UpdatedAt", type: "default: `getdate()`", details: "Thời gian cập nhật bản ghi." }
+        ]
+    },
+    "ProductImages": {
+        name: "Hình ảnh Sản phẩm (ProductImages)",
+        description: "Lưu trữ các hình ảnh bổ sung cho mỗi sản phẩm.",
+        attributes: [
+            { name: "ImageID", type: "PK, increment", details: "Mã định danh duy nhất cho hình ảnh." },
+            { name: "ProductID", type: "FK (Products.ProductID), NOT NULL", details: "Liên kết hình ảnh với sản phẩm." },
+            { name: "ImageUrl", type: "NOT NULL", details: "Đường dẫn đến hình ảnh." }
+        ]
+    },
+    "ShoppingCarts": {
+        name: "Giỏ hàng (ShoppingCarts)",
+        description: "Lưu trữ thông tin về giỏ hàng của người dùng.",
+        attributes: [
+            { name: "CartID", type: "PK, increment", details: "Mã định danh duy nhất cho giỏ hàng." },
+            { name: "UserID", type: "FK (Users.UserID), NOT NULL", details: "Liên kết giỏ hàng với người dùng." },
+            { name: "CreatedAt", type: "default: `getdate()`", details: "Thời gian tạo giỏ hàng." },
+            { name: "UpdatedAt", type: "datetime", details: "Thời gian cập nhật giỏ hàng lần cuối." }
+        ]
+    },
+    "CartItems": {
+        name: "Mục trong Giỏ hàng (CartItems)",
+        description: "Lưu trữ các sản phẩm và số lượng trong mỗi giỏ hàng.",
+        attributes: [
+            { name: "CartItemID", type: "PK, increment", details: "Mã định danh duy nhất cho mục trong giỏ hàng." },
+            { name: "CartID", type: "FK (ShoppingCarts.CartID), NOT NULL", details: "Liên kết với giỏ hàng." },
+            { name: "ProductID", type: "FK (Products.ProductID), NOT NULL", details: "Liên kết với sản phẩm." },
+            { name: "Quantity", type: "NOT NULL", details: "Số lượng sản phẩm trong mục này." },
+            { name: "AddedAt", type: "default: `getdate()`", details: "Thời gian sản phẩm được thêm vào giỏ hàng." }
+        ]
+    },
+    "Wishlists": {
+        name: "Danh sách yêu thích (Wishlists)",
+        description: "Lưu trữ danh sách yêu thích của người dùng, bao gồm sản phẩm và thời gian thêm. Mỗi cặp UserID-ProductID là duy nhất.",
+        attributes: [
+            { name: "WishlistID", type: "PK, increment", details: "Mã định danh duy nhất cho mục trong danh sách yêu thích." },
+            { name: "UserID", type: "FK (Users.UserID), NOT NULL", details: "Liên kết danh sách yêu thích với người dùng." },
+            { name: "ProductID", type: "FK (Products.ProductID), NOT NULL", details: "Liên kết với sản phẩm được thêm vào danh sách yêu thích." },
+            { name: "AddedAt", type: "default: `getdate()`", details: "Thời gian sản phẩm được thêm vào danh sách yêu thích." }
+        ]
+    },
+    "DeliveryPartners": {
+        name: "Đối tác Vận chuyển (DeliveryPartners)",
+        description: "Lưu trữ thông tin về các đối tác vận chuyển của sàn.",
+        attributes: [
+            { name: "PartnerID", type: "PK, increment", details: "Mã định danh duy nhất cho đối tác vận chuyển." },
+            { name: "Name", type: "UNIQUE, NOT NULL", details: "Tên đối tác vận chuyển." },
+            { name: "ContactPerson", type: "", details: "Người liên hệ của đối tác." },
+            { name: "PhoneNumber", type: "UNIQUE", details: "Số điện thoại liên hệ (duy nhất)." },
+            { name: "Email", type: "UNIQUE", details: "Địa chỉ email (duy nhất)." },
+            { name: "ServiceArea", type: "text", details: "Khu vực hoạt động của đối tác." },
+            { name: "Rating", type: "decimal(2,1)", details: "Đánh giá trung bình của đối tác (0-5)." },
+            { name: "CreatedAt", type: "default: `getdate()`", details: "Thời gian tạo bản ghi." }
         ]
     },
     "Orders": {
-        name: "Đơn hàng (Order)",
+        name: "Đơn hàng (Orders)",
         description: "Quản lý và xử lý đơn hàng của khách hàng.",
         attributes: [
-            { name: "order_id", type: "PK", details: "Mã định danh duy nhất cho mỗi đơn hàng." },
-            { name: "user_id", type: "FK (Users.user_id), NOT NULL", details: "Liên kết đơn hàng với người dùng đặt hàng." },
-            { name: "order_date", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Ngày và giờ đặt hàng." },
-            { name: "total_amount", type: "DECIMAL(12,2), NOT NULL", details: "Tổng giá trị của đơn hàng. CHECK (`total_amount` >= 0)" },
-            { name: "status", type: "NOT NULL, DEFAULT 'pending'", details: "Trạng thái đơn hàng. CHECK (`status` IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'))" },
-            { name: "shipping_address_id", type: "FK (Addresses.address_id), NOT NULL", details: "Địa chỉ giao hàng." },
-            { name: "billing_address_id", type: "FK (Addresses.address_id), NOT NULL", details: "Địa chỉ thanh toán." },
-            { name: "payment_method_id", type: "FK (PaymentMethods.method_id)", details: "Phương thức thanh toán." },
-            { name: "notes", type: "TEXT", details: "Ghi chú thêm về đơn hàng." }
+            { name: "OrderID", type: "PK, increment", details: "Mã định danh duy nhất cho mỗi đơn hàng." },
+            { name: "UserID", type: "FK (Users.UserID), NOT NULL", details: "Liên kết đơn hàng với người dùng đặt hàng." },
+            { name: "OrderDate", type: "default: `getdate()`", details: "Ngày và giờ đặt hàng." },
+            { name: "TotalAmount", type: "decimal(18,2), NOT NULL", details: "Tổng giá trị của đơn hàng." },
+            { name: "Status", type: "default: 'pending', NOT NULL", details: "Trạng thái đơn hàng ('pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded')." },
+            { name: "ShippingAddressID", type: "FK (Addresses.AddressID), NOT NULL", details: "Địa chỉ giao hàng." },
+            { name: "BillingAddressID", type: "FK (Addresses.AddressID), NOT NULL", details: "Địa chỉ thanh toán." },
+            { name: "DeliveryPartnerID", type: "FK (DeliveryPartners.PartnerID)", details: "Đối tác vận chuyển chịu trách nhiệm." },
+            { name: "DeliveryInstructions", type: "", details: "Hướng dẫn giao hàng đặc biệt." },
+            { name: "EstimatedDeliveryDate", type: "date", details: "Ngày giao hàng dự kiến." },
+            { name: "ActualDeliveryDate", type: "date", details: "Ngày giao hàng thực tế." },
+            { name: "PaymentMethodID", type: "FK (PaymentMethods.MethodID)", details: "Phương thức thanh toán được sử dụng." },
+            { name: "Notes", type: "text", details: "Ghi chú thêm về đơn hàng." }
         ]
     },
-    "Order_Items": {
-        name: "Chi tiết Đơn hàng (Order Item)",
+    "OrderItems": {
+        name: "Mục trong Đơn hàng (OrderItems)",
         description: "Chứa thông tin chi tiết của từng mặt hàng trong một đơn hàng.",
         attributes: [
-            { name: "order_item_id", type: "PK", details: "Mã định danh duy nhất cho chi tiết đơn hàng." },
-            { name: "order_id", type: "FK (Orders.order_id), NOT NULL", details: "Liên kết với đơn hàng." },
-            { name: "product_id", type: "FK (Products.product_id), NOT NULL", details: "Liên kết với sản phẩm." },
-            { name: "quantity", type: "INTEGER, NOT NULL", details: "Số lượng sản phẩm đặt. CHECK (`quantity` > 0)" },
-            { name: "price_at_purchase", type: "DECIMAL(10,2), NOT NULL", details: "Giá sản phẩm tại thời điểm mua. CHECK (`price_at_purchase` > 0)" },
-            { name: "seller_id", type: "FK (Sellers.seller_id), NOT NULL", details: "Người bán của sản phẩm này trong đơn hàng." }
+            { name: "OrderItemID", type: "PK, increment", details: "Mã định danh duy nhất cho chi tiết đơn hàng." },
+            { name: "OrderID", type: "FK (Orders.OrderID), NOT NULL", details: "Liên kết với đơn hàng." },
+            { name: "ProductID", type: "FK (Products.ProductID), NOT NULL", details: "Liên kết với sản phẩm." },
+            { name: "Quantity", type: "NOT NULL", details: "Số lượng sản phẩm đặt." },
+            { name: "PriceAtPurchase", type: "decimal(18,2), NOT NULL", details: "Giá sản phẩm tại thời điểm mua." },
+            { name: "SellerID", type: "FK (Sellers.SellerID), NOT NULL", details: "Người bán của sản phẩm này trong đơn hàng." }
         ]
     },
-    "Payment_Methods": {
-        name: "Phương thức Thanh toán (Payment Method)",
-        description: "Lưu trữ thông tin về các phương thức thanh toán khác nhau.",
+    "PaymentMethods": {
+        name: "Phương thức Thanh toán (PaymentMethods)",
+        description: "Lưu trữ thông tin về các phương thức thanh toán khác nhau được hỗ trợ.",
         attributes: [
-            { name: "method_id", type: "PK", details: "Mã định danh duy nhất." },
-            { name: "name", type: "VARCHAR(50), UNIQUE, NOT NULL", details: "Tên phương thức (ví dụ: 'Credit Card', 'PayPal')." },
-            { name: "description", type: "TEXT", details: "Mô tả chi tiết." },
-            { name: "is_active", type: "BOOLEAN, NOT NULL, DEFAULT TRUE", details: "Cờ chỉ định phương thức có hoạt động không." }
+            { name: "MethodID", type: "PK, increment", details: "Mã định danh duy nhất." },
+            { name: "Name", type: "UNIQUE, NOT NULL", details: "Tên phương thức (ví dụ: 'Credit Card', 'PayPal')." },
+            { name: "Description", type: "text", details: "Mô tả chi tiết." },
+            { name: "IsActive", type: "boolean, default: true", details: "Cờ chỉ định phương thức có hoạt động không." }
         ]
     },
     "Payments": {
-        name: "Thanh toán (Payment)",
+        name: "Thanh toán (Payments)",
         description: "Lưu trữ thông tin chi tiết về từng giao dịch thanh toán thực tế.",
         attributes: [
-            { name: "payment_id", type: "PK", details: "Mã định danh duy nhất cho giao dịch." },
-            { name: "order_id", type: "FK (Orders.order_id), UNIQUE, NOT NULL", details: "Liên kết với đơn hàng (thường là 1:1 với Order)." },
-            { name: "method_id", type: "FK (PaymentMethods.method_id), NOT NULL", details: "Phương thức thanh toán sử dụng." },
-            { name: "amount", type: "DECIMAL(12,2), NOT NULL", details: "Số tiền đã thanh toán. CHECK (`amount` > 0)" },
-            { name: "payment_date", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Ngày và giờ thanh toán." },
-            { name: "status", type: "VARCHAR(20), NOT NULL", details: "Trạng thái thanh toán. CHECK (`status` IN ('pending', 'completed', 'failed', 'refunded'))" },
-            { name: "transaction_id_gateway", type: "VARCHAR(255), UNIQUE", details: "Mã giao dịch từ cổng thanh toán (nếu có, thường là duy nhất)." },
-            { name: "user_id", type: "FK (Users.user_id), NOT NULL", details: "Người dùng thực hiện thanh toán." }
+            { name: "PaymentID", type: "PK, increment", details: "Mã định danh duy nhất cho giao dịch." },
+            { name: "OrderID", type: "FK (Orders.OrderID), UNIQUE, NOT NULL", details: "Liên kết với đơn hàng (thường là 1:1 với Order)." },
+            { name: "MethodID", type: "FK (PaymentMethods.MethodID), NOT NULL", details: "Phương thức thanh toán sử dụng." },
+            { name: "Amount", type: "decimal(18,2), NOT NULL", details: "Số tiền đã thanh toán." },
+            { name: "PaymentDate", type: "default: `getdate()`", details: "Ngày và giờ thanh toán." },
+            { name: "Status", type: "default: 'pending', NOT NULL", details: "Trạng thái thanh toán ('pending', 'completed', 'failed', 'refunded')." },
+            { name: "TransactionIDGateway", type: "UNIQUE", details: "Mã giao dịch từ cổng thanh toán (nếu có, thường là duy nhất)." },
+            { name: "UserID", type: "FK (Users.UserID), NOT NULL", details: "Người dùng thực hiện thanh toán." }
         ]
     },
-    "Delivery_Partners": {
-        name: "Đơn vị Vận chuyển (Delivery Partner)",
-        description: "Lưu trữ thông tin về các đối tác vận chuyển.",
-        attributes: [
-            { name: "partner_id", type: "PK", details: "Mã định danh duy nhất." },
-            { name: "name", type: "VARCHAR(100), UNIQUE, NOT NULL", details: "Tên đơn vị vận chuyển." },
-            { name: "contact_person", type: "VARCHAR(100)", details: "Người liên hệ." },
-            { name: "phone_number", type: "VARCHAR(20), UNIQUE", details: "Số điện thoại." },
-            { name: "email", type: "VARCHAR(100), UNIQUE", details: "Địa chỉ email." },
-            { name: "service_area", type: "TEXT", details: "Khu vực hoạt động." },
-            { name: "rating", type: "DECIMAL(2,1)", details: "Đánh giá trung bình. CHECK (`rating` IS NULL OR (`rating` >= 0 AND `rating` <= 5))" }
-        ]
-    },
-    "Shipments": {
-        name: "Vận chuyển (Shipment)",
-        description: "Theo dõi thông tin chi tiết về từng lô hàng được giao.",
-        attributes: [
-            { name: "shipment_id", type: "PK", details: "Mã định danh duy nhất cho lô hàng." },
-            { name: "order_id", type: "FK (Orders.order_id), NOT NULL", details: "Liên kết với đơn hàng." },
-            { name: "delivery_partner_id", type: "FK (DeliveryPartners.partner_id)", details: "Đơn vị vận chuyển chịu trách nhiệm." },
-            { name: "tracking_number", type: "VARCHAR(100), UNIQUE", details: "Mã theo dõi lô hàng (thường là duy nhất)." },
-            { name: "shipping_date", type: "TIMESTAMP", details: "Ngày gửi hàng." },
-            { name: "estimated_delivery_date", type: "DATE", details: "Ngày giao dự kiến." },
-            { name: "actual_delivery_date", type: "DATE", details: "Ngày giao thực tế." },
-            { name: "status", type: "VARCHAR(50), NOT NULL", details: "Trạng thái vận chuyển. CHECK (`status` IN ('pending_pickup', 'in_transit', 'out_for_delivery', 'delivered', 'failed_delivery', 'returned'))" },
-            { name: "shipping_cost", type: "DECIMAL(10,2)", details: "Chi phí vận chuyển. CHECK (`shipping_cost` IS NULL OR `shipping_cost` >= 0)" },
-            { name: "shipping_address_id", type: "FK (Addresses.address_id), NOT NULL", details: "Địa chỉ giao hàng." }
-        ]
-    },
-    "Inventory_Lot": {
-        name: "Lô Hàng Tồn Kho (Inventory_Lot)",
-        description: "Lưu trữ thông tin chi tiết về từng lô hàng tồn kho của sản phẩm, bao gồm hạn sử dụng.",
-        attributes: [
-            { name: "lot_id", type: "PK", details: "Mã định danh duy nhất cho mỗi lô hàng tồn kho." },
-            { name: "product_id", type: "FK (Products.product_id), NOT NULL", details: "Liên kết với sản phẩm mà lô hàng này thuộc về." },
-            { name: "seller_id", type: "FK (Sellers.seller_id), NOT NULL", details: "Người bán sở hữu lô hàng này." },
-            { name: "quantity_in_lot", type: "INTEGER, NOT NULL", details: "Số lượng sản phẩm trong lô này. CHECK (`quantity_in_lot` >= 0)" },
-            { name: "received_date", type: "DATE", details: "Ngày nhận lô hàng vào kho." },
-            { name: "manufacturing_date", type: "DATE", details: "Ngày sản xuất của lô hàng (nếu có)." },
-            { name: "expiration_date", type: "DATE, NOT NULL", details: "Ngày hết hạn của lô sản phẩm." },
-            { name: "status", type: "VARCHAR(50), DEFAULT 'available'", details: "Trạng thái của lô hàng. CHECK (`status` IN ('available', 'nearing_expiry', 'expired', 'repurposed', 'sold_out'))" },
-            { name: "cost_price_per_unit", type: "DECIMAL(10,2)", details: "Giá vốn mỗi đơn vị của lô hàng này (để tính toán lợi nhuận)." },
-            { name: "location_in_warehouse", type: "VARCHAR(100)", details: "Vị trí lưu trữ cụ thể trong kho." }
-        ]
-    },
-    "Product_Transformation": {
-        name: "Chuyển Đổi Sản Phẩm (Product_Transformation)",
+    "ProductTransformations": {
+        name: "Chuyển Đổi Sản Phẩm (ProductTransformations)",
         description: "Ghi lại các giao dịch chuyển đổi sản phẩm, đặc biệt là từ sản phẩm gốc sang sản phẩm tái chế/mới.",
         attributes: [
-            { name: "transformation_id", type: "PK", details: "Mã định danh duy nhất cho mỗi giao dịch chuyển đổi." },
-            { name: "source_lot_id", type: "FK (Inventory_Lot.lot_id), NOT NULL", details: "Lô hàng gốc được sử dụng để chuyển đổi." },
-            { name: "source_product_id", type: "FK (Products.product_id), NOT NULL", details: "Sản phẩm gốc được chuyển đổi (để dễ truy vấn)." },
-            { name: "quantity_transformed", type: "INTEGER, NOT NULL", details: "Số lượng sản phẩm gốc đã sử dụng trong quá trình chuyển đổi. CHECK (`quantity_transformed` > 0)" },
-            { name: "derived_product_id", type: "FK (Products.product_id), NOT NULL", details: "Sản phẩm mới được tạo ra sau chuyển đổi (cũng là một Product trong bảng Products)." },
-            { name: "derived_quantity_produced", type: "INTEGER, NOT NULL", details: "Số lượng sản phẩm mới được tạo ra. CHECK (`derived_quantity_produced` > 0)" },
-            { name: "transformation_date", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Ngày và giờ thực hiện chuyển đổi." },
-            { name: "reason", type: "TEXT", details: "Lý do chuyển đổi (ví dụ: 'nearing_expiry', 'damaged_packaging_repurposed')." },
-            { name: "transformed_by_user_id", type: "FK (Users.user_id)", details: "Người dùng (admin/seller) thực hiện chuyển đổi." },
-            { name: "notes", type: "TEXT", details: "Ghi chú thêm về quá trình chuyển đổi." }
+            { name: "TransformationID", type: "PK, increment", details: "Mã định danh duy nhất cho mỗi giao dịch chuyển đổi." },
+            { name: "SourceProductID", type: "FK (Products.ProductID), NOT NULL", details: "Sản phẩm gốc được chuyển đổi." },
+            { name: "SourceImportDate", type: "date", details: "Ngày nhập của sản phẩm gốc (để tham chiếu lô cụ thể nếu cần)." },
+            { name: "SourceExpirationDate", type: "date", details: "Ngày hết hạn của sản phẩm gốc (để tham chiếu lô cụ thể nếu cần)." },
+            { name: "QuantityTransformed", type: "NOT NULL", details: "Số lượng sản phẩm gốc đã sử dụng trong quá trình chuyển đổi." },
+            { name: "DerivedProductID", type: "FK (Products.ProductID), NOT NULL", details: "Sản phẩm mới được tạo ra sau chuyển đổi (cũng là một Product trong bảng Products)." },
+            { name: "DerivedQuantityProduced", type: "NOT NULL", details: "Số lượng sản phẩm mới được tạo ra." },
+            { name: "TransformationDate", type: "default: `getdate()`", details: "Ngày và giờ thực hiện chuyển đổi." },
+            { name: "TransformedByUserID", type: "FK (Users.UserID)", details: "Người dùng (admin/seller) thực hiện chuyển đổi." },
+            { name: "Notes", type: "text", details: "Ghi chú thêm về quá trình chuyển đổi." }
         ]
     },
-    "Product_Reviews": {
-        name: "Đánh Giá Sản Phẩm (Product_Reviews)",
+    "ProductReviews": {
+        name: "Đánh Giá Sản Phẩm (ProductReviews)",
         description: "Lưu trữ các đánh giá và xếp hạng của người dùng cho từng sản phẩm đã mua.",
         attributes: [
-            { name: "review_id", type: "PK", details: "Mã định danh duy nhất cho đánh giá." },
-            { name: "product_id", type: "FK (Products.product_id), NOT NULL", details: "Sản phẩm được đánh giá." },
-            { name: "user_id", type: "FK (Users.user_id), NOT NULL", details: "Người dùng đã thực hiện đánh giá." },
-            { name: "order_item_id", type: "FK (Order_Items.order_item_id), UNIQUE, NOT NULL", details: "Mục đơn hàng cụ thể mà sản phẩm được mua. Đảm bảo người dùng chỉ đánh giá sản phẩm đã mua và mỗi mục đơn hàng chỉ được đánh giá một lần." },
-            { name: "rating", type: "INTEGER, NOT NULL", details: "Điểm đánh giá (ví dụ: 1 đến 5 sao). CHECK (`rating` >= 1 AND `rating` <= 5)" },
-            { name: "comment", type: "TEXT", details: "Nội dung bình luận của đánh giá." },
-            { name: "review_date", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Ngày và giờ đánh giá." },
-            { name: "status", type: "VARCHAR(20), NOT NULL, DEFAULT 'pending'", details: "Trạng thái đánh giá (ví dụ: 'pending', 'approved', 'rejected')." }
+            { name: "ReviewID", type: "PK, increment", details: "Mã định danh duy nhất cho đánh giá." },
+            { name: "ProductID", type: "FK (Products.ProductID), NOT NULL", details: "Sản phẩm được đánh giá." },
+            { name: "UserID", type: "FK (Users.UserID), NOT NULL", details: "Người dùng đã thực hiện đánh giá." },
+            { name: "OrderItemID", type: "FK (OrderItems.OrderItemID), UNIQUE, NOT NULL", details: "Mục đơn hàng cụ thể mà sản phẩm được mua. Đảm bảo người dùng chỉ đánh giá sản phẩm đã mua và mỗi mục đơn hàng chỉ được đánh giá một lần." },
+            { name: "Rating", type: "NOT NULL", details: "Điểm đánh giá (1-5 sao)." },
+            { name: "Comment", type: "text", details: "Nội dung bình luận của đánh giá." },
+            { name: "ReviewDate", type: "default: `getdate()`", details: "Ngày và giờ đánh giá." },
+            { name: "Status", type: "default: 'pending', NOT NULL", details: "Trạng thái đánh giá ('pending', 'approved', 'rejected')." }
         ]
     },
     "Sales": {
         name: "Chương Trình Giảm Giá (Sales)",
-        description: "Quản lý các chương trình giảm giá tổng thể áp dụng cho sản phẩm trên sàn.",
+        description: "Quản lý các chương trình giảm giá tổng thể áp dụng cho sản phẩm trên sàn. Giờ đây liên kết trực tiếp với một danh mục cụ thể.",
         attributes: [
-            { name: "sale_id", type: "PK", details: "Mã định danh duy nhất cho chương trình giảm giá." },
-            { name: "name", type: "VARCHAR(100), NOT NULL", details: "Tên chương trình giảm giá (ví dụ: 'Black Friday Sale')." },
-            { name: "description", type: "TEXT", details: "Mô tả chi tiết chương trình." },
-            { name: "discount_type", type: "VARCHAR(20), NOT NULL", details: "Loại giảm giá ('percentage', 'fixed_amount')." },
-            { name: "discount_value", type: "DECIMAL(10,2), NOT NULL", details: "Giá trị giảm giá (ví dụ: 0.10 cho 10%, 50000 cho 50.000 VNĐ)." },
-            { name: "start_date", type: "TIMESTAMP, NOT NULL", details: "Ngày bắt đầu chương trình." },
-            { name: "end_date", type: "TIMESTAMP, NOT NULL", details: "Ngày kết thúc chương trình." },
-            { name: "applies_to_scope", type: "VARCHAR(50), NOT NULL", details: "Phạm vi áp dụng ('all_products', 'specific_categories', 'specific_products')." },
-            { name: "scope_value", type: "TEXT", details: "Giá trị phạm vi (ví dụ: 'category_ids: [1,2,3]' hoặc 'product_ids: [101,102]'). Có thể là JSON hoặc danh sách ID phân cách bằng dấu phẩy." },
-            { name: "status", type: "VARCHAR(20), NOT NULL, DEFAULT 'active'", details: "Trạng thái chương trình ('active', 'inactive', 'scheduled', 'ended')." },
-            { name: "created_at", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Thời gian tạo bản ghi." }
+            { name: "SaleID", type: "PK, increment", details: "Mã định danh duy nhất cho chương trình giảm giá." },
+            { name: "Name", type: "NOT NULL", details: "Tên chương trình giảm giá (ví dụ: 'Black Friday Sale')." },
+            { name: "Description", type: "text", details: "Mô tả chi tiết chương trình." },
+            { name: "DiscountType", type: "NOT NULL", details: "Loại giảm giá ('percentage', 'fixed_amount')." },
+            { name: "DiscountValue", type: "decimal(18,2), NOT NULL", details: "Giá trị giảm giá (ví dụ: 0.10 cho 10%, 50000 cho 50.000 VNĐ)." },
+            { name: "StartDate", type: "NOT NULL", details: "Ngày bắt đầu chương trình." },
+            { name: "EndDate", type: "NOT NULL", details: "Ngày kết thúc chương trình." },
+            { name: "CategoryID", type: "FK (Categories.CategoryID), NULL", details: "Danh mục áp dụng giảm giá (NULL nếu áp dụng cho tất cả sản phẩm)." },
+            { name: "Status", type: "default: 'active', NOT NULL", details: "Trạng thái chương trình ('active', 'inactive', 'scheduled', 'ended')." },
+            { name: "CreatedAt", type: "default: `getdate()`", details: "Thời gian tạo bản ghi." }
+        ]
+    },
+    "Shipments": {
+        name: "Vận chuyển (Shipments)",
+        description: "Theo dõi thông tin chi tiết về từng lô hàng được giao từ đơn hàng đến người nhận.",
+        attributes: [
+            { name: "ShipmentID", type: "PK, increment", details: "Mã định danh duy nhất cho mỗi lô hàng." },
+            { name: "OrderID", type: "FK (Orders.OrderID), NOT NULL", details: "Đơn hàng được vận chuyển." },
+            { name: "DeliveryPartnerID", type: "FK (DeliveryPartners.PartnerID)", details: "Đối tác vận chuyển chịu trách nhiệm." },
+            { name: "TrackingNumber", type: "UNIQUE", details: "Mã theo dõi lô hàng (duy nhất)." },
+            { name: "ShippingDate", type: "datetime", details: "Ngày lô hàng được gửi đi." },
+            { name: "EstimatedDeliveryDate", type: "date", details: "Ngày giao hàng dự kiến." },
+            { name: "ActualDeliveryDate", type: "date", details: "Ngày giao hàng thực tế." },
+            { name: "Status", type: "NOT NULL", details: "Trạng thái vận chuyển ('pending_pickup', 'in_transit', 'out_for_delivery', 'delivered', 'failed_delivery', 'returned')." },
+            { name: "ShippingCost", type: "decimal(10,2)", details: "Chi phí vận chuyển." },
+            { name: "ShippingAddressID", type: "FK (Addresses.AddressID), NOT NULL", details: "Địa chỉ giao hàng cụ thể cho lô hàng này." }
         ]
     },
     "Coupons": {
         name: "Mã Giảm Giá (Coupons)",
-        description: "Quản lý các mã giảm giá cụ thể mà người dùng có thể áp dụng.",
+        description: "Quản lý các mã giảm giá cụ thể mà người dùng có thể áp dụng. Giờ đây liên kết trực tiếp với một danh mục cụ thể.",
         attributes: [
-            { name: "coupon_id", type: "PK", details: "Mã định danh duy nhất cho mã giảm giá." },
-            { name: "code", type: "VARCHAR(50), UNIQUE, NOT NULL", details: "Mã coupon (ví dụ: 'FREESHIP2023')." },
-            { name: "description", type: "TEXT", details: "Mô tả mã giảm giá." },
-            { name: "discount_type", type: "VARCHAR(20), NOT NULL", details: "Loại giảm giá ('percentage', 'fixed_amount', 'free_shipping')." },
-            { name: "discount_value", type: "DECIMAL(10,2)", details: "Giá trị giảm giá (nếu có, không áp dụng cho freeship)." },
-            { name: "start_date", type: "TIMESTAMP, NOT NULL", details: "Ngày bắt đầu hiệu lực." },
-            { name: "expiration_date", type: "TIMESTAMP, NOT NULL", details: "Ngày hết hạn hiệu lực." },
-            { name: "is_free_shipping", type: "BOOLEAN, NOT NULL, DEFAULT FALSE", details: "Có miễn phí vận chuyển hay không." },
-            { name: "quantity_available", type: "INTEGER", details: "Số lượng mã coupon còn lại (NULL nếu không giới hạn). CHECK (`quantity_available` IS NULL OR `quantity_available` >= 0)" },
-            { name: "usage_limit_per_customer", type: "INTEGER", details: "Số lần sử dụng tối đa cho mỗi khách hàng (NULL nếu không giới hạn). CHECK (`usage_limit_per_customer` IS NULL OR `usage_limit_per_customer` >= 0)" },
-            { name: "applies_to_scope", type: "VARCHAR(50), NOT NULL", details: "Phạm vi áp dụng ('all_products', 'specific_categories', 'specific_products')." },
-            { name: "scope_value", type: "TEXT", details: "Giá trị phạm vi (ví dụ: 'category_ids: [1,2,3]' hoặc 'product_ids: [101,102]')." },
-            { name: "min_order_amount", type: "DECIMAL(12,2)", details: "Số tiền đơn hàng tối thiểu để áp dụng coupon (NULL nếu không có)." },
-            { name: "max_discount_amount", type: "DECIMAL(10,2)", details: "Số tiền giảm giá tối đa (NULL nếu không có)." },
-            { name: "status", type: "VARCHAR(20), NOT NULL, DEFAULT 'active'", details: "Trạng thái coupon ('active', 'inactive', 'expired')." },
-            { name: "created_at", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Thời gian tạo bản ghi." }
+            { name: "CouponID", type: "PK, increment", details: "Mã định danh duy nhất cho mã giảm giá." },
+            { name: "Code", type: "UNIQUE, NOT NULL", details: "Mã coupon (ví dụ: 'FREESHIP2023')." },
+            { name: "Description", type: "text", details: "Mô tả mã giảm giá." },
+            { name: "DiscountType", type: "NOT NULL", details: "Loại giảm giá ('percentage', 'fixed_amount', 'free_shipping')." },
+            { name: "DiscountValue", type: "decimal(18,2)", details: "Giá trị giảm giá (nếu có, không áp dụng cho freeship)." },
+            { name: "StartDate", type: "NOT NULL", details: "Ngày bắt đầu hiệu lực." },
+            { name: "ExpirationDate", type: "NOT NULL", details: "Ngày hết hạn hiệu lực." },
+            { name: "IsFreeShipping", type: "boolean, default: false", details: "Có miễn phí vận chuyển hay không." },
+            { name: "QuantityAvailable", type: "int", details: "Số lượng mã coupon còn lại (NULL nếu không giới hạn)." },
+            { name: "UsageLimitPerCustomer", type: "int", details: "Số lần sử dụng tối đa cho mỗi khách hàng (NULL nếu không giới hạn)." },
+            { name: "CategoryID", type: "FK (Categories.CategoryID)", details: "Danh mục áp dụng coupon (NULL nếu áp dụng cho tất cả sản phẩm)." },
+            { name: "MinOrderAmount", type: "decimal(18,2)", details: "Số tiền đơn hàng tối thiểu để áp dụng coupon (NULL nếu không có)." },
+            { name: "MaxDiscountAmount", type: "decimal(18,2)", details: "Số tiền giảm giá tối đa (NULL nếu không có)." },
+            { name: "Status", type: "default: 'active', NOT NULL", details: "Trạng thái coupon ('active', 'inactive', 'expired')." },
+            { name: "CreatedAt", type: "default: `getdate()`", details: "Thời gian tạo bản ghi." }
+        ]
+    },
+    "Notifications": {
+        name: "Thông báo (Notifications)",
+        description: "Lưu trữ các thông báo gửi đến người dùng.",
+        attributes: [
+            { name: "NotificationID", type: "PK, increment", details: "Mã định danh duy nhất cho thông báo." },
+            { name: "UserID", type: "FK (Users.UserID), NOT NULL", details: "Người dùng nhận thông báo." },
+            { name: "Title", type: "NOT NULL", details: "Tiêu đề thông báo." },
+            { name: "Content", type: "text, NOT NULL", details: "Nội dung chi tiết thông báo." },
+            { name: "Status", type: "default: 'unread', NOT NULL", details: "Trạng thái thông báo ('unread', 'read')." },
+            { name: "CreatedAt", type: "default: `getdate()`", details: "Thời gian tạo thông báo." }
+        ]
+    },
+    "Admins": {
+        name: "Quản trị viên (Admins)",
+        description: "Mở rộng thông tin cho người dùng có vai trò là quản trị viên.",
+        attributes: [
+            { name: "AdminID", type: "PK, FK (Users.UserID)", details: "Mã định danh quản trị viên, liên kết với Users." },
+            { name: "Permissions", type: "text", details: "Quyền hạn cụ thể của quản trị viên (ví dụ: JSON hoặc text)." },
+            { name: "LastActionLog", type: "text", details: "Nhật ký hành động cuối cùng của quản trị viên." }
         ]
     }
 };
 
 const relationshipsData = [
-    { name: "Users - Addresses", type: "1:N", from: "Users", to: "Addresses", details: "Một người dùng có thể có nhiều địa chỉ. `Addresses.user_id` (FK) -> `Users.user_id` (PK)." },
-    { name: "Users - Sellers", type: "1:1 (hoặc 1:0..1)", from: "Users", to: "Sellers", details: "Một người dùng có thể là một người bán. `Sellers.seller_id` (PK, FK) -> `Users.user_id` (PK)." },
-    { name: "Users - Admins", type: "1:1 (hoặc 1:0..1)", from: "Users", to: "Admins", details: "Một người dùng có thể là một quản trị viên. `Admins.admin_id` (PK, FK) -> `Users.user_id` (PK)." },
-    { name: "Users - Orders", type: "1:N", from: "Users", to: "Orders", details: "Một người dùng (người mua) có thể đặt nhiều đơn hàng. `Orders.user_id` (FK) -> `Users.user_id` (PK)." },
-    { name: "Sellers - Products", type: "1:N", from: "Sellers", to: "Products", details: "Một người bán có thể bán nhiều sản phẩm. `Products.seller_id` (FK) -> `Sellers.seller_id` (PK)." },
-    { name: "Categories - Products", type: "1:N", from: "Categories", to: "Products", details: "Một danh mục có thể chứa nhiều sản phẩm. `Products.category_id` (FK) -> `Categories.category_id` (PK)." },
-    { name: "Orders - Order_Items", type: "1:N", from: "Orders", to: "Order_Items", details: "Một đơn hàng có thể bao gồm nhiều mặt hàng. `Order_Items.order_id` (FK) -> `Orders.order_id` (PK)." },
-    { name: "Products - Order_Items", type: "M:N (qua Order_Items)", from: "Products", to: "Order_Items", details: "Một sản phẩm có thể xuất hiện trong nhiều chi tiết đơn hàng. `Order_Items.product_id` (FK) -> `Products.product_id` (PK)." },
-    { name: "Orders - Payments", type: "1:1", from: "Orders", to: "Payments", details: "Mỗi đơn hàng thường liên kết với một giao dịch thanh toán. `Payments.order_id` (FK, UNIQUE) -> `Orders.order_id` (PK)." },
-    { name: "Payment_Methods - Payments", type: "1:N", from: "Payment_Methods", to: "Payments", details: "Một phương thức thanh toán có thể được sử dụng cho nhiều giao dịch. `Payments.method_id` (FK) -> `Payment_Methods.method_id` (PK)." },
-    { name: "Orders - Shipments", type: "1:N", from: "Orders", to: "Shipments", details: "Một đơn hàng có thể có một hoặc nhiều lô hàng. `Shipments.order_id` (FK) -> `Orders.order_id` (PK)." },
-    { name: "Delivery_Partners - Shipments", type: "1:N", from: "Delivery_Partners", to: "Shipments", details: "Một đơn vị vận chuyển có thể xử lý nhiều lô hàng. `Shipments.delivery_partner_id` (FK) -> `Delivery_Partners.partner_id` (PK)." },
-    { name: "Products - Inventory_Lot", type: "1:N", from: "Products", to: "Inventory_Lot", details: "Một loại sản phẩm có thể có nhiều lô hàng tồn kho. `Inventory_Lot.product_id` (FK) -> `Products.product_id` (PK)." },
-    { name: "Inventory_Lot - Product_Transformation (Source)", type: "1:N", from: "Inventory_Lot", to: "Product_Transformation", details: "Một lô hàng tồn kho có thể là nguồn cho nhiều lần chuyển đổi. `Product_Transformation.source_lot_id` (FK) -> `Inventory_Lot.lot_id` (PK)." },
-    { name: "Products (Source) - Product_Transformation", type: "1:N", from: "Products", to: "Product_Transformation", details: "Một loại sản phẩm gốc có thể là nguồn cho nhiều giao dịch chuyển đổi. `Product_Transformation.source_product_id` (FK) -> `Products.product_id` (PK)." },
-    { name: "Products (Derived) - Product_Transformation", type: "1:N", from: "Products", to: "Product_Transformation", details: "Một loại sản phẩm (được tái chế/chuyển đổi) có thể là kết quả của nhiều giao dịch chuyển đổi. `Product_Transformation.derived_product_id` (FK) -> `Products.product_id` (PK)." },
-    { name: "Users - Product_Reviews", type: "1:N", from: "Users", to: "Product_Reviews", details: "Một người dùng có thể viết nhiều đánh giá. `Product_Reviews.user_id` (FK) -> `Users.user_id` (PK)." },
-    { name: "Products - Product_Reviews", type: "1:N", from: "Products", to: "Product_Reviews", details: "Một sản phẩm có thể nhận nhiều đánh giá. `Product_Reviews.product_id` (FK) -> `Products.product_id` (PK)." },
-    { name: "Order_Items - Product_Reviews", type: "1:1", from: "Order_Items", to: "Product_Reviews", details: "Mỗi mục đơn hàng chỉ có thể có một đánh giá. `Product_Reviews.order_item_id` (FK, UNIQUE) -> `Order_Items.order_item_id` (PK). Đảm bảo đánh giá chỉ cho sản phẩm đã mua." },
-    { name: "Coupons - Orders", type: "1:N", from: "Coupons", to: "Orders (optional)", details: "Một mã giảm giá có thể được sử dụng trong nhiều đơn hàng. (Có thể thêm `coupon_id` vào bảng `Orders` hoặc bảng `Order_Coupons` trung gian để theo dõi sử dụng)." }
-];
+    { name: "Users - Roles", type: "N:1", from: "Users", to: "Roles", details: "Một người dùng thuộc về một vai trò duy nhất. `Users.RoleID` (FK) -> `Roles.RoleID` (PK)." },
+    { name: "Users - Sellers", type: "1:1 (hoặc 1:0..1)", from: "Users", to: "Sellers", details: "Một người dùng có thể là một người bán. `Sellers.SellerID` (PK, FK) -> `Users.UserID` (PK)." },
+    { name: "Users - Admins", type: "1:1 (hoặc 1:0..1)", from: "Users", to: "Admins", details: "Một người dùng có thể là một quản trị viên. `Admins.AdminID` (PK, FK) -> `Users.UserID` (PK)." },
+    { name: "Users - Addresses", type: "1:N", from: "Users", to: "Addresses", details: "Một người dùng có thể có nhiều địa chỉ. `Addresses.UserID` (FK) -> `Users.UserID` (PK)." },
+    { name: "Users - ShoppingCarts", type: "1:N", from: "Users", to: "ShoppingCarts", details: "Một người dùng có thể có nhiều giỏ hàng (nếu hệ thống hỗ trợ nhiều giỏ hàng hoặc lịch sử giỏ hàng). `ShoppingCarts.UserID` (FK) -> `Users.UserID` (PK)." },
+    { name: "Users - Wishlists", type: "1:N", from: "Users", to: "Wishlists", details: "Một người dùng có thể có nhiều mục trong danh sách yêu thích. `Wishlists.UserID` (FK) -> `Users.UserID` (PK)." },
+    { name: "Users - Orders", type: "1:N", from: "Users", to: "Orders", details: "Một người dùng (người mua) có thể đặt nhiều đơn hàng. `Orders.UserID` (FK) -> `Users.UserID` (PK)." },
+    { name: "Users - Payments", type: "1:N", from: "Users", to: "Payments", details: "Một người dùng có thể thực hiện nhiều giao dịch thanh toán. `Payments.UserID` (FK) -> `Users.UserID` (PK)." },
+    { name: "Users - ProductReviews", type: "1:N", from: "Users", to: "ProductReviews", details: "Một người dùng có thể viết nhiều đánh giá sản phẩm. `ProductReviews.UserID` (FK) -> `Users.UserID` (PK)." },
+    { name: "Users - ProductTransformations", type: "1:N", from: "Users", to: "ProductTransformations", details: "Một người dùng (admin/seller) có thể thực hiện nhiều giao dịch chuyển đổi sản phẩm. `ProductTransformations.TransformedByUserID` (FK) -> `Users.UserID` (PK)." },
+    { name: "Users - Notifications", type: "1:N", from: "Users", to: "Notifications", details: "Một người dùng có thể nhận nhiều thông báo. `Notifications.UserID` (FK) -> `Users.UserID` (PK)." },
 
-const principlesData = [
-    {
-        title: "4.1. Chuẩn hóa cơ sở dữ liệu (Normalization)",
-        content: `
-            <p class="mb-2">Chuẩn hóa là quá trình tổ chức các cột và bảng để giảm thiểu dư thừa dữ liệu và cải thiện tính toàn vẹn.</p>
-            <p class="mb-2"><strong>Lợi ích:</strong> Giảm dư thừa, cải thiện toàn vẹn, ngăn chặn bất thường dữ liệu, tối ưu hóa cấu trúc và truy vấn.</p>
-            <p class="font-semibold mt-3 mb-1">Các dạng chuẩn hóa chính:</p>
-            <ul class="list-disc list-inside ml-4 space-y-1">
-                <li><strong>1NF (First Normal Form):</strong> Mỗi ô chứa một giá trị đơn, không nhóm lặp lại, mỗi cột tên duy nhất.</li>
-                <li><strong>2NF (Second Normal Form):</strong> Ở dạng 1NF, tất cả thuộc tính không khóa phụ thuộc hoàn toàn vào toàn bộ khóa chính.</li>
-                <li><strong>3NF (Third Normal Form):</strong> Ở dạng 2NF, không có sự phụ thuộc bắc cầu.</li>
-            </ul>
-            <p class="mt-2"><strong>Đánh đổi:</strong> Có thể tạo nhiều bảng hơn, yêu cầu nhiều JOIN, đôi khi ảnh hưởng hiệu suất. Cần cân bằng.</p>
-        `
-    },
-    {
-        title: "4.2. Khả năng mở rộng (Scalability)",
-        content: `
-            <p class="mb-2">Khả năng của hệ thống để xử lý khối lượng công việc tăng hoặc dữ liệu lớn hơn mà vẫn duy trì hiệu suất.</p>
-            <p class="font-semibold mt-3 mb-1">Giải pháp:</p>
-            <ul class="list-disc list-inside ml-4 space-y-1">
-                <li><strong>Mở rộng theo chiều dọc (Vertical Scaling):</strong> Tăng CPU, RAM, lưu trữ cho một máy chủ.</li>
-                <li><strong>Mở rộng theo chiều ngang (Horizontal Scaling / Sharding):</strong> Phân tán khối lượng công việc trên nhiều máy chủ.</li>
-                <li><strong>Cụm cơ sở dữ liệu (Database Clustering):</strong> Phân phối dữ liệu, cân bằng tải, tăng khả năng chịu lỗi.</li>
-                <li><strong>Sử dụng dịch vụ đám mây (Cloud Services):</strong> Linh hoạt thêm/bớt tài nguyên.</li>
-            </ul>
-        `
-    },
-    {
-        title: "4.3. Bảo mật dữ liệu (Security)",
-        content: `
-            <p class="mb-2">Tối quan trọng do tính nhạy cảm của thông tin khách hàng.</p>
-            <p class="font-semibold mt-3 mb-1">Thực tiễn tốt nhất:</p>
-            <ul class="list-disc list-inside ml-4 space-y-1">
-                <li>Chọn nền tảng an toàn, tuân thủ PCI DSS.</li>
-                <li>Triển khai chứng chỉ SSL/TLS.</li>
-                <li>Kích hoạt xác thực hai yếu tố (2FA).</li>
-                <li>Sử dụng tường lửa, phần mềm chống mã độc.</li>
-                <li>Kiểm soát truy cập chặt chẽ và mã hóa dữ liệu.</li>
-            </ul>
-        `
-    },
-    {
-        title: "4.4. Tối ưu hóa hiệu suất (Performance Optimization)",
-        content: `
-            <p class="mb-2">Then chốt cho trải nghiệm người dùng. Trang chậm dẫn đến tỷ lệ thoát cao.</p>
-            <p class="font-semibold mt-3 mb-1">Giải pháp:</p>
-            <ul class="list-disc list-inside ml-4 space-y-1">
-                <li><strong>Thiết kế lược đồ hiệu quả:</strong> Cân nhắc chuẩn hóa và phi chuẩn hóa.</li>
-                <li><strong>Lập chỉ mục (Indexing):</strong> Giúp định vị dữ liệu nhanh.</li>
-                <li><strong>Tối ưu hóa truy vấn (Query Optimization):</strong> Viết truy vấn hiệu quả, tránh SELECT *.</li>
-                <li><strong>Cơ chế bộ nhớ đệm (Caching Mechanisms):</strong> Giảm tần suất truy cập CSDL (ví dụ: Redis).</li>
-                <li><strong>Bảo trì định kỳ:</strong> Bảo trì chỉ mục, cập nhật thống kê.</li>
-            </ul>
-        `
-    }
+    { name: "Cities - Districts", type: "1:N", from: "Cities", to: "Districts", details: "Một thành phố có nhiều quận/huyện. `Districts.CityID` (FK) -> `Cities.CityID` (PK)." },
+    { name: "Cities - Addresses", type: "1:N", from: "Cities", to: "Addresses", details: "Một thành phố có thể có nhiều địa chỉ. `Addresses.CityID` (FK) -> `Cities.CityID` (PK)." },
+    { name: "Districts - Addresses", type: "1:N", from: "Districts", to: "Addresses", details: "Một quận/huyện có thể có nhiều địa chỉ. `Addresses.DistrictID` (FK) -> `Districts.DistrictID` (PK)." },
+
+    { name: "Categories - Products", type: "1:N", from: "Categories", to: "Products", details: "Một danh mục có thể chứa nhiều sản phẩm. `Products.CategoryID` (FK) -> `Categories.CategoryID` (PK)." },
+    { name: "Categories - Categories (Self-referencing)", type: "1:N", from: "Categories", to: "Categories", details: "Một danh mục cha có thể có nhiều danh mục con. `Categories.ParentCategoryID` (FK) -> `Categories.CategoryID` (PK)." },
+    { name: "Categories - Sales", type: "N:1", from: "Sales", to: "Categories", details: "Một chương trình giảm giá có thể áp dụng cho một danh mục cụ thể (hoặc NULL cho tất cả). `Sales.CategoryID` (FK) -> `Categories.CategoryID` (PK)." },
+    { name: "Categories - Coupons", type: "N:1", from: "Coupons", to: "Categories", details: "Một mã giảm giá có thể áp dụng cho một danh mục cụ thể (hoặc NULL cho tất cả). `Coupons.CategoryID` (FK) -> `Categories.CategoryID` (PK)." },
+
+
+    { name: "Sellers - Products", type: "1:N", from: "Sellers", to: "Products", details: "Một người bán có thể bán nhiều sản phẩm. `Products.SellerID` (FK) -> `Sellers.SellerID` (PK)." },
+    { name: "Sellers - OrderItems", type: "1:N", from: "Sellers", to: "OrderItems", details: "Một người bán có thể có sản phẩm trong nhiều mục đơn hàng. `OrderItems.SellerID` (FK) -> `Sellers.SellerID` (PK)." },
+
+    { name: "Products - ProductImages", type: "1:N", from: "Products", to: "ProductImages", details: "Một sản phẩm có thể có nhiều hình ảnh. `ProductImages.ProductID` (FK) -> `Products.ProductID` (PK)." },
+    { name: "Products - CartItems", type: "1:N", from: "Products", to: "CartItems", details: "Một sản phẩm có thể xuất hiện trong nhiều mục giỏ hàng. `CartItems.ProductID` (FK) -> `Products.ProductID` (PK)." },
+    { name: "Products - Wishlists", type: "1:N", from: "Products", to: "Wishlists", details: "Một sản phẩm có thể xuất hiện trong nhiều danh sách yêu thích. `Wishlists.ProductID` (FK) -> `Products.ProductID` (PK)." },
+    { name: "Products - OrderItems", type: "M:N (qua OrderItems)", from: "Products", to: "OrderItems", details: "Một sản phẩm có thể xuất hiện trong nhiều chi tiết đơn hàng. `OrderItems.ProductID` (FK) -> `Products.ProductID` (PK)." },
+    { name: "Products - ProductReviews", type: "1:N", from: "Products", to: "ProductReviews", details: "Một sản phẩm có thể nhận nhiều đánh giá. `ProductReviews.ProductID` (FK) -> `Products.ProductID` (PK)." },
+    { name: "Products - ProductTransformations (Source)", type: "1:N", from: "Products", to: "ProductTransformations", details: "Một sản phẩm gốc có thể là nguồn cho nhiều giao dịch chuyển đổi. `ProductTransformations.SourceProductID` (FK) -> `Products.ProductID` (PK)." },
+    { name: "Products - ProductTransformations (Derived)", type: "1:N", from: "Products", to: "ProductTransformations", details: "Một sản phẩm (được tái chế/chuyển đổi) có thể là kết quả của nhiều giao dịch chuyển đổi. `ProductTransformations.DerivedProductID` (FK) -> `Products.ProductID` (PK)." },
+
+    { name: "ShoppingCarts - CartItems", type: "1:N", from: "ShoppingCarts", to: "CartItems", details: "Một giỏ hàng có thể chứa nhiều mục. `CartItems.CartID` (FK) -> `ShoppingCarts.CartID` (PK)." },
+
+    { name: "Orders - OrderItems", type: "1:N", from: "Orders", to: "OrderItems", details: "Một đơn hàng có thể bao gồm nhiều mặt hàng. `OrderItems.OrderID` (FK) -> `Orders.OrderID` (PK)." },
+    { name: "Orders - Payments", type: "1:1", from: "Orders", to: "Payments", details: "Mỗi đơn hàng thường liên kết với một giao dịch thanh toán duy nhất. `Payments.OrderID` (FK, UNIQUE) -> `Orders.OrderID` (PK)." },
+    { name: "Orders - DeliveryPartners", type: "N:1", from: "Orders", to: "DeliveryPartners", details: "Một đơn hàng được giao bởi một đối tác vận chuyển. `Orders.DeliveryPartnerID` (FK) -> `DeliveryPartners.PartnerID` (PK)." },
+    { name: "Orders - Addresses (Shipping)", type: "N:1", from: "Orders", to: "Addresses", details: "Một đơn hàng có một địa chỉ giao hàng. `Orders.ShippingAddressID` (FK) -> `Addresses.AddressID` (PK)." },
+    { name: "Orders - Addresses (Billing)", type: "N:1", from: "Orders", to: "Addresses", details: "Một đơn hàng có một địa chỉ thanh toán. `Orders.BillingAddressID` (FK) -> `Addresses.AddressID` (PK)." },
+    { name: "Orders - PaymentMethods", type: "N:1", from: "Orders", to: "PaymentMethods", details: "Một đơn hàng sử dụng một phương thức thanh toán. `Orders.PaymentMethodID` (FK) -> `PaymentMethods.MethodID` (PK)." },
+
+    { name: "PaymentMethods - Payments", type: "1:N", from: "PaymentMethods", to: "Payments", details: "Một phương thức thanh toán có thể được sử dụng cho nhiều giao dịch. `Payments.MethodID` (FK) -> `PaymentMethods.MethodID` (PK)." },
+
+    { name: "OrderItems - ProductReviews", type: "1:1", from: "OrderItems", to: "ProductReviews", details: "Mỗi mục đơn hàng chỉ có thể có một đánh giá. `ProductReviews.OrderItemID` (FK, UNIQUE) -> `OrderItems.OrderItemID` (PK)." },
+
+    // New relationships for Shipments
+    { name: "Orders - Shipments", type: "1:N", from: "Orders", to: "Shipments", details: "Một đơn hàng có thể có nhiều lô hàng (nếu các sản phẩm được giao riêng lẻ hoặc từ nhiều kho). `Shipments.OrderID` (FK) -> `Orders.OrderID` (PK)." },
+    { name: "DeliveryPartners - Shipments", type: "1:N", from: "DeliveryPartners", to: "Shipments", details: "Một đối tác vận chuyển có thể xử lý nhiều lô hàng. `Shipments.DeliveryPartnerID` (FK) -> `DeliveryPartners.PartnerID` (PK)." },
+    { name: "Addresses - Shipments", type: "N:1", from: "Addresses", to: "Shipments", details: "Một lô hàng có một địa chỉ giao hàng cụ thể. `Shipments.ShippingAddressID` (FK) -> `Addresses.AddressID` (PK)." }
 ];
 
 const constraintsData = [
@@ -657,9 +717,9 @@ const constraintsData = [
         description: "Một cột hoặc một tập hợp các cột xác định duy nhất mỗi hàng trong một bảng. Khóa chính không được chứa giá trị NULL và phải là duy nhất.",
         howItWorks: "Khi một cột được định nghĩa là khóa chính, DBMS tự động tạo một chỉ mục duy nhất trên cột đó để tăng tốc độ truy vấn và đảm bảo tính duy nhất. Mỗi bảng chỉ có thể có một khóa chính.",
         examples: [
-            "`Users.user_id` PK: Mỗi người dùng có một mã định danh duy nhất.",
-            "`Products.product_id` PK: Mỗi sản phẩm có một mã định danh duy nhất.",
-            "`Orders.order_id` PK: Mỗi đơn hàng có một mã định danh duy nhất."
+            "`Users.UserID` PK: Mỗi người dùng có một mã định danh duy nhất.",
+            "`Products.ProductID` PK: Mỗi sản phẩm có một mã định danh duy nhất.",
+            "`Orders.OrderID` PK: Mỗi đơn hàng có một mã định danh duy nhất."
         ]
     },
     {
@@ -667,9 +727,9 @@ const constraintsData = [
         description: "Một cột hoặc tập hợp các cột trong một bảng (bảng con) tham chiếu đến khóa chính của một bảng khác (bảng cha). Khóa ngoại thiết lập mối liên kết giữa hai bảng và đảm bảo tính toàn vẹn tham chiếu.",
         howItWorks: "Đảm bảo rằng mọi giá trị được chèn hoặc cập nhật vào cột khóa ngoại phải tồn tại trong cột khóa chính của bảng cha. Khi xóa/cập nhật bảng cha, DBMS sẽ kiểm tra các hàng liên quan trong bảng con và áp dụng quy tắc hành động (ví dụ: RESTRICT, CASCADE, SET NULL, SET DEFAULT).",
         examples: [
-            "`Orders.user_id` FK REFERENCES `Users(user_id)`: Mỗi đơn hàng phải thuộc về một người dùng đã tồn tại.",
-            "`Products.category_id` FK REFERENCES `Categories(category_id)`: Mỗi sản phẩm phải thuộc về một danh mục đã tồn tại.",
-            "`Order_Items.product_id` FK REFERENCES `Products(product_id)`: Mỗi mục trong đơn hàng phải là một sản phẩm đã tồn tại."
+            "`Orders.UserID` FK REFERENCES `Users(UserID)`: Mỗi đơn hàng phải thuộc về một người dùng đã tồn tại.",
+            "`Products.CategoryID` FK REFERENCES `Categories(CategoryID)`: Mỗi sản phẩm phải thuộc về một danh mục đã tồn tại.",
+            "`OrderItems.ProductID` FK REFERENCES `Products(ProductID)`: Mỗi mục trong đơn hàng phải là một sản phẩm đã tồn tại."
         ]
     },
     {
@@ -677,9 +737,9 @@ const constraintsData = [
         description: "Ràng buộc này đảm bảo rằng một cột không thể chứa giá trị NULL (rỗng). Điều này có nghĩa là mỗi hàng phải có một giá trị cụ thể cho cột đó.",
         howItWorks: "Nếu bạn cố gắng chèn một hàng mới hoặc cập nhật một hàng hiện có mà để trống (NULL) một cột có ràng buộc NOT NULL, thao tác sẽ bị từ chối.",
         examples: [
-            "`Users.email` NOT NULL: Mỗi người dùng phải có địa chỉ email.",
-            "`Products.name` NOT NULL: Mỗi sản phẩm phải có tên.",
-            "`Orders.order_date` NOT NULL: Mỗi đơn hàng phải có ngày đặt hàng."
+            "`Users.PhoneNumber` NOT NULL: Mỗi người dùng phải có số điện thoại.",
+            "`Products.Name` NOT NULL: Mỗi sản phẩm phải có tên.",
+            "`Orders.OrderDate` NOT NULL: Mỗi đơn hàng phải có ngày đặt hàng."
         ]
     },
     {
@@ -687,9 +747,9 @@ const constraintsData = [
         description: "Ràng buộc này đảm bảo rằng tất cả các giá trị trong một cột (hoặc tập hợp các cột) phải là duy nhất. Một bảng có thể có nhiều ràng buộc UNIQUE và cột UNIQUE có thể chứa giá trị NULL (thường chỉ một giá trị NULL duy nhất được phép, tùy DBMS).",
         howItWorks: "Nếu bạn cố gắng chèn một giá trị đã tồn tại vào một cột có ràng buộc UNIQUE, thao tác sẽ bị từ chối. Khác với PRIMARY KEY, UNIQUE không nhất thiết phải là khóa chính và có thể cho phép NULL.",
         examples: [
-            "`Users.username` UNIQUE: Tên đăng nhập của mỗi người dùng phải là duy nhất.",
-            "`Categories.name` UNIQUE: Tên mỗi danh mục sản phẩm phải là duy nhất.",
-            "`Products.sku` UNIQUE: Mã SKU của mỗi sản phẩm (nếu có) phải là duy nhất."
+            "`Users.Username` UNIQUE: Tên đăng nhập của mỗi người dùng phải là duy nhất.",
+            "`Categories.Name` UNIQUE: Tên mỗi danh mục sản phẩm phải là duy nhất.",
+            "`Coupons.Code` UNIQUE: Mã coupon phải là duy nhất."
         ]
     },
     {
@@ -697,9 +757,9 @@ const constraintsData = [
         description: "Ràng buộc CHECK được sử dụng để định nghĩa một điều kiện logic mà dữ liệu trong một cột (hoặc nhiều cột) phải thỏa mãn. Điều kiện này được đánh giá mỗi khi dữ liệu được chèn hoặc cập nhật.",
         howItWorks: "Mỗi khi một hàng được chèn hoặc cập nhật, điều kiện trong CHECK sẽ được tự động kiểm tra. Nếu điều kiện trả về FALSE, thao tác sẽ bị từ chối.",
         examples: [
-            "`Products.price` CHECK (`price` > 0): Đảm bảo giá sản phẩm luôn là một số dương.",
-            "`Order_Items.quantity` CHECK (`quantity` > 0): Đảm bảo số lượng sản phẩm trong đơn hàng luôn lớn hơn 0.",
-            "`Users.role` CHECK (`role` IN ('buyer', 'seller', 'admin')): Đảm bảo vai trò người dùng chỉ thuộc một trong các giá trị hợp lệ."
+            "`Products.Price` CHECK (`Price` > 0): Đảm bảo giá sản phẩm luôn là một số dương.",
+            "`OrderItems.Quantity` CHECK (`Quantity` > 0): Đảm bảo số lượng sản phẩm trong đơn hàng luôn lớn hơn 0.",
+            "`Users.Status` CHECK (`Status` IN ('active', 'inactive', 'suspended')): Đảm bảo trạng thái người dùng chỉ thuộc một trong các giá trị hợp lệ."
         ]
     },
     {
@@ -707,64 +767,397 @@ const constraintsData = [
         description: "Ràng buộc DEFAULT được sử dụng để cung cấp một giá trị mặc định cho một cột nếu không có giá trị nào được chỉ định khi chèn một hàng mới.",
         howItWorks: "Nếu một cột có ràng buộc DEFAULT bị bỏ qua trong câu lệnh INSERT, cơ sở dữ liệu sẽ tự động sử dụng giá trị mặc định đã định nghĩa cho cột đó.",
         examples: [
-            "`Orders.status` DEFAULT 'pending': Nếu không chỉ định, trạng thái đơn hàng mặc định là 'pending'.",
-            "`Users.registration_date` DEFAULT CURRENT_TIMESTAMP: Ngày đăng ký mặc định là thời điểm hiện tại.",
-            "`Products.stock_quantity` DEFAULT 0: Số lượng tồn kho mặc định là 0 nếu không được cung cấp."
+            "`Orders.Status` DEFAULT 'pending': Nếu không chỉ định, trạng thái đơn hàng mặc định là 'pending'.",
+            "`Users.RegistrationDate` DEFAULT GETDATE(): Ngày đăng ký mặc định là thời điểm hiện tại.",
+            "`Products.StockQuantity` DEFAULT 0: Số lượng tồn kho mặc định là 0 nếu không được cung cấp."
         ]
     }
 ];
 
 const expirationRepurposingData = {
     problem: {
-        title: "Bài toán: Quản lý Hạn sử dụng và Tái chế sản phẩm",
-        description: "Trong một số ngành hàng (ví dụ: thực phẩm, dược phẩm), sản phẩm có hạn sử dụng nhất định. Khi sản phẩm gần hết hạn, có thể cần chuyển đổi chúng thành sản phẩm khác (ví dụ: cà rốt tươi thành nước ép cà rốt) để tránh lãng phí và tạo ra giá trị mới."
+        title: "Bài toán: Quản lý Hạn sử dụng và Tái chế Sản phẩm",
+        description: "Trong một số ngành hàng như thực phẩm, dược phẩm, việc quản lý hạn sử dụng (HSD) của sản phẩm là rất quan trọng. Đồng thời, khả năng tái chế hoặc chuyển đổi sản phẩm gần hết hạn thành một dạng sản phẩm khác (ví dụ: cà rốt tươi thành nước ép cà rốt) có thể giúp giảm thiểu lãng phí và tối ưu hóa giá trị. Phần này sẽ thảo luận về cách mở rộng mô hình cơ sở dữ liệu để giải quyết các yêu cầu này dựa trên lược đồ bạn đã cung cấp."
     },
     expirationSolution: {
-        title: "Giải pháp cho Hạn sử dụng: Bảng `Inventory_Lot`",
-        description: "Để quản lý hạn sử dụng một cách chính xác, đặc biệt khi cùng một sản phẩm có thể có nhiều lô hàng với các hạn sử dụng khác nhau, việc tạo một bảng riêng là cần thiết.",
+        title: "Giải pháp cho Hạn sử dụng: Bảng `Products`",
+        description: "Theo lược đồ bạn cung cấp, thông tin hạn sử dụng (`ImportDate` và `ExpirationDate`) được lưu trữ trực tiếp trong bảng `Products`.",
         table: {
-            name: "Inventory_Lot (Lô Hàng Tồn Kho)",
+            name: "Products (Sản phẩm)",
             attributes: [
-                { name: "lot_id", type: "PK", details: "Mã định danh duy nhất cho mỗi lô hàng tồn kho." },
-                { name: "product_id", type: "FK (Products.product_id), NOT NULL", details: "Liên kết với sản phẩm mà lô hàng này thuộc về." },
-                { name: "seller_id", type: "FK (Sellers.seller_id), NOT NULL", details: "Người bán sở hữu lô hàng này." },
-                { name: "quantity_in_lot", type: "INTEGER, NOT NULL", details: "Số lượng sản phẩm trong lô này. CHECK (`quantity_in_lot` >= 0)" },
-                { name: "received_date", type: "DATE", details: "Ngày nhận lô hàng vào kho." },
-                { name: "manufacturing_date", type: "DATE", details: "Ngày sản xuất của lô hàng (nếu có)." },
-                { name: "expiration_date", type: "DATE, NOT NULL", details: "Ngày hết hạn của lô sản phẩm." },
-                { name: "status", type: "VARCHAR(50), DEFAULT 'available'", details: "Trạng thái của lô hàng. CHECK (`status` IN ('available', 'nearing_expiry', 'expired', 'repurposed', 'sold_out'))" },
-                { name: "cost_price_per_unit", type: "DECIMAL(10,2)", details: "Giá vốn mỗi đơn vị của lô hàng này (để tính toán lợi nhuận)." },
-                { name: "location_in_warehouse", type: "VARCHAR(100)", details: "Vị trí lưu trữ cụ thể trong kho." }
+                { name: "ProductID", type: "PK, increment", details: "Mã định danh duy nhất cho sản phẩm." },
+                { name: "ImportDate", type: "date", details: "Ngày nhập sản phẩm vào kho." },
+                { name: "ExpirationDate", type: "date", details: "Ngày hết hạn của sản phẩm." },
+                { name: "IsRecyclable", type: "boolean, default: false", details: "Cờ chỉ định sản phẩm có thể tái chế/chuyển đổi thành sản phẩm khác hay không." }
             ]
         },
-        explanation: "Việc tách `expiration_date` ra khỏi bảng `Products` và đưa vào `Inventory_Lot` giúp quản lý chi tiết từng lô sản phẩm. Một sản phẩm (ví dụ: sữa) có thể có nhiều lô khác nhau, mỗi lô có ngày sản xuất và hạn sử dụng riêng. Điều này cho phép hệ thống theo dõi chính xác tồn kho theo hạn sử dụng, cảnh báo khi sản phẩm gần hết hạn, và hỗ trợ các phương pháp quản lý tồn kho như FIFO (First-In, First-Out)."
+        explanation: "Trong mô hình này, `ExpirationDate` được gán cho từng `ProductID`, tức là cho từng loại sản phẩm. Điều này phù hợp nếu tất cả các đơn vị của một loại sản phẩm cụ thể đều có cùng một hạn sử dụng. Thuộc tính `IsRecyclable` cũng được thêm vào bảng `Products` để dễ dàng xác định những sản phẩm có tiềm năng tái chế. Với lược đồ hiện tại, thông tin hạn sử dụng được quản lý trực tiếp trên sản phẩm, không cần bảng `Inventory_Lot` riêng biệt cho mục đích này."
     },
     repurposingSolution: {
-        title: "Giải pháp cho Tái chế/Chuyển đổi sản phẩm: Bảng `Product_Transformation`",
-        description: "Để theo dõi quá trình chuyển đổi sản phẩm (thường là gần hết hạn) thành sản phẩm mới, một bảng riêng sẽ ghi lại các giao dịch này.",
+        title: "Giải pháp cho Tái chế/Chuyển đổi sản phẩm: Bảng `ProductTransformations`",
+        description: "Bảng này ghi lại quá trình chuyển đổi một sản phẩm gốc (có thể gần hết hạn) thành một sản phẩm mới (tái chế).",
         table: {
-            name: "Product_Transformation (Chuyển Đổi Sản Phẩm)",
+            name: "ProductTransformations (Chuyển Đổi Sản Phẩm)",
             attributes: [
-                { name: "transformation_id", type: "PK", details: "Mã định danh duy nhất cho mỗi giao dịch chuyển đổi." },
-                { name: "source_lot_id", type: "FK (Inventory_Lot.lot_id), NOT NULL", details: "Lô hàng gốc được sử dụng để chuyển đổi." },
-                { name: "source_product_id", type: "FK (Products.product_id), NOT NULL", details: "Sản phẩm gốc được chuyển đổi (để dễ truy vấn)." },
-                { name: "quantity_transformed", type: "INTEGER, NOT NULL", details: "Số lượng sản phẩm gốc đã sử dụng trong quá trình chuyển đổi. CHECK (`quantity_transformed` > 0)" },
-                { name: "derived_product_id", type: "FK (Products.product_id), NOT NULL", details: "Sản phẩm mới được tạo ra sau chuyển đổi (cũng là một Product trong bảng Products)." },
-                { name: "derived_quantity_produced", type: "INTEGER, NOT NULL", details: "Số lượng sản phẩm mới được tạo ra. CHECK (`derived_quantity_produced` > 0)" },
-                { name: "transformation_date", type: "TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP", details: "Ngày và giờ thực hiện chuyển đổi." },
-                { name: "reason", type: "TEXT", details: "Lý do chuyển đổi (ví dụ: 'nearing_expiry', 'damaged_packaging_repurposed')." },
-                { name: "transformed_by_user_id", type: "FK (Users.user_id)", details: "Người dùng (admin/seller) thực hiện chuyển đổi." },
-                { name: "notes", type: "TEXT", details: "Ghi chú thêm về quá trình chuyển đổi." }
+                { name: "TransformationID", type: "PK, increment", details: "Mã định danh duy nhất cho mỗi giao dịch chuyển đổi." },
+                { name: "SourceProductID", type: "FK (Products.ProductID), NOT NULL", details: "Sản phẩm gốc được chuyển đổi (ví dụ: cà rốt tươi)." },
+                { name: "SourceImportDate", type: "date", details: "Ngày nhập của sản phẩm gốc (để tham chiếu lô cụ thể nếu cần)." },
+                { name: "SourceExpirationDate", type: "date", details: "Ngày hết hạn của sản phẩm gốc (để tham chiếu lô cụ thể nếu cần)." },
+                { name: "QuantityTransformed", type: "NOT NULL", details: "Số lượng sản phẩm gốc đã sử dụng trong quá trình chuyển đổi." },
+                { name: "DerivedProductID", type: "FK (Products.ProductID), NOT NULL", details: "Sản phẩm mới được tạo ra sau chuyển đổi (cũng là một Product trong bảng Products)." },
+                { name: "DerivedQuantityProduced", type: "NOT NULL", details: "Số lượng sản phẩm mới được tạo ra." },
+                { name: "TransformationDate", type: "default: `getdate()`", details: "Ngày và giờ thực hiện chuyển đổi." },
+                { name: "TransformedByUserID", type: "FK (Users.UserID)", details: "Người dùng (admin/seller) thực hiện chuyển đổi." },
+                { name: "Notes", type: "text", details: "Ghi chú thêm về quá trình chuyển đổi." }
             ]
         },
-        explanation: "Khi một sản phẩm (ví dụ: cà rốt từ một lô gần hết hạn) được chuyển đổi thành sản phẩm khác (nước ép), hệ thống sẽ ghi nhận giao dịch này vào bảng `Product_Transformation`. Đồng thời, số lượng của `source_lot_id` trong `Inventory_Lot` tương ứng sẽ giảm (hoặc trạng thái lô thay đổi), và số lượng của `derived_product_id` sẽ tăng (có thể tạo một lô mới trong `Inventory_Lot` cho sản phẩm mới này với HSD mới nếu có). Điều này giúp duy trì tính toàn vẹn tồn kho và theo dõi chuỗi giá trị của sản phẩm. Quan trọng là, `derived_product_id` là một `product_id` trong chính bảng `Products`, cho phép một sản phẩm gốc có thể tạo ra nhiều loại sản phẩm tái chế khác nhau (ví dụ: cà rốt có thể thành nước ép hoặc thành nguyên liệu súp)."
+        explanation: "Khi một sản phẩm (ví dụ: cà rốt) được chuyển đổi thành sản phẩm khác (nước ép), hệ thống sẽ ghi nhận giao dịch này vào bảng `ProductTransformations`. `SourceProductID` và `DerivedProductID` đều tham chiếu đến các bản ghi trong bảng `Products`. Điều này cho phép một sản phẩm gốc có thể tạo ra nhiều loại sản phẩm tái chế khác nhau (ví dụ: cà rốt có thể thành nước ép hoặc thành nguyên liệu súp). Sau khi chuyển đổi, số lượng tồn kho của `SourceProductID` sẽ giảm và của `DerivedProductID` sẽ tăng. Việc lưu trữ `SourceImportDate` và `SourceExpirationDate` trực tiếp trong bảng này giúp truy vết nguồn gốc của sản phẩm được chuyển đổi."
     },
     needForNewTables: {
-        title: "Có cần thiết để tạo bảng mới hay không?",
-        explanation: "<strong>Có, việc tạo các bảng mới như `Inventory_Lot` và `Product_Transformation` là rất cần thiết.</strong><br/>- Nếu chỉ thêm thuộc tính `expiration_date` trực tiếp vào bảng `Products` hiện có, sẽ dẫn đến <strong>vi phạm chuẩn hóa dữ liệu</strong> (cụ thể là 1NF và 2NF nếu một sản phẩm có nhiều lô với HSD khác nhau) và gây ra sự dư thừa, không nhất quán dữ liệu.<br/>- Việc quản lý tồn kho theo lô (batch/lot tracking) là không thể nếu chỉ có một cột `stock_quantity` và `expiration_date` trong bảng `Products`. `Inventory_Lot` cho phép theo dõi chính xác từng lô hàng, hỗ trợ các chiến lược quản lý kho như FIFO/FEFO.<br/>- Đối với việc tái chế, bảng `Product_Transformation` ghi lại một <strong>sự kiện</strong> chuyển đổi. Nếu chỉ thêm thuộc tính vào `Products`, bạn sẽ không thể theo dõi lịch sử chuyển đổi hoặc mối quan hệ phức tạp giữa sản phẩm gốc và sản phẩm phái sinh.<br/>Các bảng riêng biệt giúp quản lý thông tin một cách rõ ràng, chính xác, tuân thủ các dạng chuẩn hóa, và có khả năng mở rộng hơn cho các nghiệp vụ phức tạp như quản lý lô hàng, tồn kho theo hạn sử dụng, truy xuất nguồn gốc và chuỗi cung ứng."
+        title: "Sự cần thiết của bảng `ProductTransformations`",
+        explanation: "Bảng `ProductTransformations` là cần thiết để ghi lại <strong>sự kiện</strong> chuyển đổi sản phẩm. Nếu không có bảng này, việc theo dõi lịch sử tái chế, số lượng sản phẩm gốc đã dùng, và số lượng sản phẩm mới tạo ra sẽ rất khó khăn hoặc không thể. Nó giúp duy trì tính toàn vẹn dữ liệu và cung cấp khả năng truy xuất nguồn gốc cho các sản phẩm được tái chế, đồng thời hỗ trợ các báo cáo về hiệu quả quản lý tồn kho và giảm lãng phí. Trong khi đó, với lược đồ DBML hiện tại, bảng `Inventory_Lot` không còn cần thiết cho việc quản lý HSD vì các thuộc tính đó đã được chuyển trực tiếp vào bảng `Products`."
     }
 };
 
+const sqlSchemaData = `
+-- Table Roles
+CREATE TABLE Roles (
+    RoleID INT IDENTITY(1,1) PRIMARY KEY,
+    RoleName VARCHAR(50) UNIQUE NOT NULL
+);
+
+-- Table Users
+CREATE TABLE Users (
+    UserID INT IDENTITY(1,1) PRIMARY KEY,
+    Username VARCHAR(50) UNIQUE NOT NULL,
+    PasswordHash VARCHAR(255) NOT NULL,
+    FirstName VARCHAR(50),
+    LastName VARCHAR(50),
+    Email VARCHAR(100) UNIQUE,
+    PhoneNumber VARCHAR(20) UNIQUE NOT NULL,
+    DateOfBirth DATE,
+    ProfilePictureUrl VARCHAR(255),
+    RoleID INT NOT NULL,
+    RegistrationDate DATETIME DEFAULT GETDATE(),
+    LastLoginDate DATETIME,
+    Status VARCHAR(20) DEFAULT 'active' NOT NULL,
+    CONSTRAINT CK_Users_Status CHECK (Status IN ('active', 'inactive', 'suspended')),
+    CONSTRAINT FK_Users_Roles FOREIGN KEY (RoleID) REFERENCES Roles(RoleID)
+);
+
+-- Table Sellers
+CREATE TABLE Sellers (
+    SellerID INT PRIMARY KEY,
+    StoreName VARCHAR(255) NOT NULL,
+    StoreDescription TEXT,
+    BankAccountDetails VARCHAR(255),
+    BusinessLicenseNumber VARCHAR(50) UNIQUE,
+    SellerRating DECIMAL(2,1) DEFAULT 0,
+    JoinDate DATETIME DEFAULT GETDATE(),
+    IsVerified BIT DEFAULT 0,
+    CONSTRAINT CK_Sellers_Rating CHECK (SellerRating >= 0 AND SellerRating <= 5),
+    CONSTRAINT FK_Sellers_Users FOREIGN KEY (SellerID) REFERENCES Users(UserID)
+);
+
+-- Table Cities
+CREATE TABLE Cities (
+    CityID INT IDENTITY(1,1) PRIMARY KEY,
+    CityName VARCHAR(100) UNIQUE NOT NULL
+);
+
+-- Table Districts
+CREATE TABLE Districts (
+    DistrictID INT IDENTITY(1,1) PRIMARY KEY,
+    CityID INT NOT NULL,
+    DistrictName VARCHAR(100) NOT NULL,
+    CONSTRAINT UQ_Districts_CityID_DistrictName UNIQUE (CityID, DistrictName),
+    CONSTRAINT FK_Districts_Cities FOREIGN KEY (CityID) REFERENCES Cities(CityID)
+);
+
+-- Table Addresses
+CREATE TABLE Addresses (
+    AddressID INT IDENTITY(1,1) PRIMARY KEY,
+    UserID INT NOT NULL,
+    StreetAddress VARCHAR(255) NOT NULL,
+    CityID INT NOT NULL,
+    DistrictID INT NOT NULL,
+    AddressType VARCHAR(20) DEFAULT 'shipping' NOT NULL,
+    IsDefault BIT DEFAULT 0,
+    CONSTRAINT CK_Addresses_Type CHECK (AddressType IN ('shipping', 'billing', 'home', 'work')),
+    CONSTRAINT FK_Addresses_Users FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    CONSTRAINT FK_Addresses_Cities FOREIGN KEY (CityID) REFERENCES Cities(CityID),
+    CONSTRAINT FK_Addresses_Districts FOREIGN KEY (DistrictID) REFERENCES Districts(DistrictID)
+);
+
+-- Table Categories
+CREATE TABLE Categories (
+    CategoryID INT IDENTITY(1,1) PRIMARY KEY,
+    Name VARCHAR(100) UNIQUE NOT NULL,
+    Description TEXT,
+    ParentCategoryID INT,
+    CONSTRAINT FK_Categories_ParentCategory FOREIGN KEY (ParentCategoryID) REFERENCES Categories(CategoryID)
+);
+
+-- Table Products
+CREATE TABLE Products (
+    ProductID INT IDENTITY(1,1) PRIMARY KEY,
+    SellerID INT NOT NULL,
+    CategoryID INT NOT NULL,
+    Name VARCHAR(255) NOT NULL,
+    Description TEXT,
+    Price DECIMAL(18,2) NOT NULL,
+    StockQuantity INT DEFAULT 0,
+    Unit VARCHAR(20),
+    ImageUrl VARCHAR(255),
+    Status VARCHAR(20) DEFAULT 'available' NOT NULL,
+    IsRecyclable BIT DEFAULT 0,
+    ImportDate DATE,
+    ExpirationDate DATE,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    UpdatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT CK_Products_Price CHECK (Price >= 0),
+    CONSTRAINT CK_Products_StockQuantity CHECK (StockQuantity >= 0),
+    CONSTRAINT CK_Products_Status CHECK (Status IN ('available', 'out_of_stock', 'discontinued', 'hidden')),
+    CONSTRAINT FK_Products_Sellers FOREIGN KEY (SellerID) REFERENCES Sellers(SellerID),
+    CONSTRAINT FK_Products_Categories FOREIGN KEY (CategoryID) REFERENCES Categories(CategoryID)
+);
+
+-- Table ProductImages
+CREATE TABLE ProductImages (
+    ImageID INT IDENTITY(1,1) PRIMARY KEY,
+    ProductID INT NOT NULL,
+    ImageUrl VARCHAR(255) NOT NULL,
+    CONSTRAINT FK_ProductImages_Products FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
+);
+
+-- Table ShoppingCarts
+CREATE TABLE ShoppingCarts (
+    CartID INT IDENTITY(1,1) PRIMARY KEY,
+    UserID INT NOT NULL,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    UpdatedAt DATETIME,
+    CONSTRAINT FK_ShoppingCarts_Users FOREIGN KEY (UserID) REFERENCES Users(UserID)
+);
+
+-- Table CartItems
+CREATE TABLE CartItems (
+    CartItemID INT IDENTITY(1,1) PRIMARY KEY,
+    CartID INT NOT NULL,
+    ProductID INT NOT NULL,
+    Quantity INT NOT NULL,
+    AddedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT CK_CartItems_Quantity CHECK (Quantity > 0),
+    CONSTRAINT FK_CartItems_ShoppingCarts FOREIGN KEY (CartID) REFERENCES ShoppingCarts(CartID),
+    CONSTRAINT FK_CartItems_Products FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
+);
+
+-- Table Wishlists
+CREATE TABLE Wishlists (
+    WishlistID INT IDENTITY(1,1) PRIMARY KEY,
+    UserID INT NOT NULL,
+    ProductID INT NOT NULL,
+    AddedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT UQ_Wishlists_UserID_ProductID UNIQUE (UserID, ProductID),
+    CONSTRAINT FK_Wishlists_Users FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    CONSTRAINT FK_Wishlists_Products FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
+);
+
+-- Table DeliveryPartners
+CREATE TABLE DeliveryPartners (
+    PartnerID INT IDENTITY(1,1) PRIMARY KEY,
+    Name VARCHAR(100) UNIQUE NOT NULL,
+    ContactPerson VARCHAR(100),
+    PhoneNumber VARCHAR(20) UNIQUE,
+    Email VARCHAR(100) UNIQUE,
+    ServiceArea TEXT,
+    Rating DECIMAL(2,1),
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT CK_DeliveryPartners_Rating CHECK (Rating >= 0 AND Rating <= 5)
+);
+
+-- Table Orders
+CREATE TABLE Orders (
+    OrderID INT IDENTITY(1,1) PRIMARY KEY,
+    UserID INT NOT NULL,
+    OrderDate DATETIME DEFAULT GETDATE(),
+    TotalAmount DECIMAL(18,2) NOT NULL,
+    Status VARCHAR(20) DEFAULT 'pending' NOT NULL,
+    ShippingAddressID INT NOT NULL,
+    BillingAddressID INT NOT NULL,
+    DeliveryPartnerID INT,
+    DeliveryInstructions VARCHAR(255),
+    EstimatedDeliveryDate DATE,
+    ActualDeliveryDate DATE,
+    PaymentMethodID INT,
+    Notes TEXT,
+    CONSTRAINT CK_Orders_TotalAmount CHECK (TotalAmount >= 0),
+    CONSTRAINT CK_Orders_Status CHECK (Status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded')),
+    CONSTRAINT FK_Orders_Users FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    CONSTRAINT FK_Orders_ShippingAddress FOREIGN KEY (ShippingAddressID) REFERENCES Addresses(AddressID),
+    CONSTRAINT FK_Orders_BillingAddress FOREIGN KEY (BillingAddressID) REFERENCES Addresses(AddressID),
+    CONSTRAINT FK_Orders_DeliveryPartners FOREIGN KEY (DeliveryPartnerID) REFERENCES DeliveryPartners(PartnerID),
+    CONSTRAINT FK_Orders_PaymentMethods FOREIGN KEY (PaymentMethodID) REFERENCES PaymentMethods(MethodID)
+);
+
+-- Table OrderItems
+CREATE TABLE OrderItems (
+    OrderItemID INT IDENTITY(1,1) PRIMARY KEY,
+    OrderID INT NOT NULL,
+    ProductID INT NOT NULL,
+    Quantity INT NOT NULL,
+    PriceAtPurchase DECIMAL(18,2) NOT NULL,
+    SellerID INT NOT NULL,
+    CONSTRAINT CK_OrderItems_Quantity CHECK (Quantity > 0),
+    CONSTRAINT CK_OrderItems_PriceAtPurchase CHECK (PriceAtPurchase >= 0),
+    CONSTRAINT FK_OrderItems_Orders FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
+    CONSTRAINT FK_OrderItems_Products FOREIGN KEY (ProductID) REFERENCES Products(ProductID),
+    CONSTRAINT FK_OrderItems_Sellers FOREIGN KEY (SellerID) REFERENCES Sellers(SellerID)
+);
+
+-- Table PaymentMethods
+CREATE TABLE PaymentMethods (
+    MethodID INT IDENTITY(1,1) PRIMARY KEY,
+    Name VARCHAR(50) UNIQUE NOT NULL,
+    Description TEXT,
+    IsActive BIT DEFAULT 1
+);
+
+-- Table Payments
+CREATE TABLE Payments (
+    PaymentID INT IDENTITY(1,1) PRIMARY KEY,
+    OrderID INT UNIQUE NOT NULL,
+    MethodID INT NOT NULL,
+    Amount DECIMAL(18,2) NOT NULL,
+    PaymentDate DATETIME DEFAULT GETDATE(),
+    Status VARCHAR(20) DEFAULT 'pending' NOT NULL,
+    TransactionIDGateway VARCHAR(255) UNIQUE,
+    UserID INT NOT NULL,
+    CONSTRAINT CK_Payments_Amount CHECK (Amount >= 0),
+    CONSTRAINT CK_Payments_Status CHECK (Status IN ('pending', 'completed', 'failed', 'refunded')),
+    CONSTRAINT FK_Payments_Orders FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
+    CONSTRAINT FK_Payments_PaymentMethods FOREIGN KEY (MethodID) REFERENCES PaymentMethods(MethodID),
+    CONSTRAINT FK_Payments_Users FOREIGN KEY (UserID) REFERENCES Users(UserID)
+);
+
+-- Table ProductTransformations
+CREATE TABLE ProductTransformations (
+    TransformationID INT IDENTITY(1,1) PRIMARY KEY,
+    SourceProductID INT NOT NULL,
+    SourceImportDate DATE,
+    SourceExpirationDate DATE,
+    QuantityTransformed INT NOT NULL,
+    DerivedProductID INT NOT NULL,
+    DerivedQuantityProduced INT NOT NULL,
+    TransformationDate DATETIME DEFAULT GETDATE(),
+    TransformedByUserID INT,
+    Notes TEXT,
+    CONSTRAINT CK_ProductTransformations_QuantityTransformed CHECK (QuantityTransformed > 0),
+    CONSTRAINT CK_ProductTransformations_DerivedQuantityProduced CHECK (DerivedQuantityProduced > 0),
+    CONSTRAINT FK_ProductTransformations_SourceProduct FOREIGN KEY (SourceProductID) REFERENCES Products(ProductID),
+    CONSTRAINT FK_ProductTransformations_DerivedProduct FOREIGN KEY (DerivedProductID) REFERENCES Products(ProductID),
+    CONSTRAINT FK_ProductTransformations_User FOREIGN KEY (TransformedByUserID) REFERENCES Users(UserID)
+);
+
+-- Table ProductReviews
+CREATE TABLE ProductReviews (
+    ReviewID INT IDENTITY(1,1) PRIMARY KEY,
+    ProductID INT NOT NULL,
+    UserID INT NOT NULL,
+    OrderItemID INT UNIQUE NOT NULL,
+    Rating INT NOT NULL,
+    Comment TEXT,
+    ReviewDate DATETIME DEFAULT GETDATE(),
+    Status VARCHAR(20) DEFAULT 'pending' NOT NULL,
+    CONSTRAINT CK_ProductReviews_Rating CHECK (Rating >= 1 AND Rating <= 5),
+    CONSTRAINT CK_ProductReviews_Status CHECK (Status IN ('pending', 'approved', 'rejected')),
+    CONSTRAINT FK_ProductReviews_Products FOREIGN KEY (ProductID) REFERENCES Products(ProductID),
+    CONSTRAINT FK_ProductReviews_Users FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    CONSTRAINT FK_ProductReviews_OrderItems FOREIGN KEY (OrderItemID) REFERENCES OrderItems(OrderItemID)
+);
+
+-- Table Sales
+CREATE TABLE Sales (
+    SaleID INT IDENTITY(1,1) PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL,
+    Description TEXT,
+    DiscountType VARCHAR(20) NOT NULL,
+    DiscountValue DECIMAL(18,2) NOT NULL,
+    StartDate DATETIME NOT NULL,
+    EndDate DATETIME NOT NULL,
+    CategoryID INT,
+    Status VARCHAR(20) DEFAULT 'active' NOT NULL,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT CK_Sales_DiscountType CHECK (DiscountType IN ('percentage', 'fixed_amount')),
+    CONSTRAINT CK_Sales_DiscountValue CHECK (DiscountValue >= 0),
+    CONSTRAINT CK_Sales_Status CHECK (Status IN ('active', 'inactive', 'scheduled', 'ended')),
+    CONSTRAINT FK_Sales_Categories FOREIGN KEY (CategoryID) REFERENCES Categories(CategoryID)
+);
+
+-- Table Shipments
+CREATE TABLE Shipments (
+    ShipmentID INT IDENTITY(1,1) PRIMARY KEY,
+    OrderID INT NOT NULL,
+    DeliveryPartnerID INT,
+    TrackingNumber VARCHAR(100) UNIQUE,
+    ShippingDate DATETIME,
+    EstimatedDeliveryDate DATE,
+    ActualDeliveryDate DATE,
+    Status VARCHAR(50) NOT NULL,
+    ShippingCost DECIMAL(10,2),
+    ShippingAddressID INT NOT NULL,
+    CONSTRAINT CK_Shipments_Status CHECK (Status IN ('pending_pickup', 'in_transit', 'out_for_delivery', 'delivered', 'failed_delivery', 'returned')),
+    CONSTRAINT FK_Shipments_Orders FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
+    CONSTRAINT FK_Shipments_DeliveryPartners FOREIGN KEY (DeliveryPartnerID) REFERENCES DeliveryPartners(PartnerID),
+    CONSTRAINT FK_Shipments_ShippingAddress FOREIGN KEY (ShippingAddressID) REFERENCES Addresses(AddressID)
+);
+
+-- Table Coupons
+CREATE TABLE Coupons (
+    CouponID INT IDENTITY(1,1) PRIMARY KEY,
+    Code VARCHAR(50) UNIQUE NOT NULL,
+    Description TEXT,
+    DiscountType VARCHAR(20) NOT NULL,
+    DiscountValue DECIMAL(18,2),
+    StartDate DATETIME NOT NULL,
+    ExpirationDate DATETIME NOT NULL,
+    IsFreeShipping BIT DEFAULT 0,
+    QuantityAvailable INT,
+    UsageLimitPerCustomer INT,
+    CategoryID INT,
+    MinOrderAmount DECIMAL(18,2),
+    MaxDiscountAmount DECIMAL(18,2),
+    Status VARCHAR(20) DEFAULT 'active' NOT NULL,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT CK_Coupons_DiscountType CHECK (DiscountType IN ('percentage', 'fixed_amount', 'free_shipping')),
+    CONSTRAINT CK_Coupons_DiscountValue CHECK (DiscountValue IS NULL OR DiscountValue >= 0),
+    CONSTRAINT CK_Coupons_QuantityAvailable CHECK (QuantityAvailable IS NULL OR QuantityAvailable >= 0),
+    CONSTRAINT CK_Coupons_UsageLimitPerCustomer CHECK (UsageLimitPerCustomer IS NULL OR UsageLimitPerCustomer >= 0),
+    CONSTRAINT CK_Coupons_MinOrderAmount CHECK (MinOrderAmount IS NULL OR MinOrderAmount >= 0),
+    CONSTRAINT CK_Coupons_MaxDiscountAmount CHECK (MaxDiscountAmount IS NULL OR MaxDiscountAmount >= 0),
+    CONSTRAINT CK_Coupons_Status CHECK (Status IN ('active', 'inactive', 'expired')),
+    CONSTRAINT FK_Coupons_Categories FOREIGN KEY (CategoryID) REFERENCES Categories(CategoryID)
+);
+
+-- Table Notifications
+CREATE TABLE Notifications (
+    NotificationID INT IDENTITY(1,1) PRIMARY KEY,
+    UserID INT NOT NULL,
+    Title VARCHAR(255) NOT NULL,
+    Content TEXT NOT NULL,
+    Status VARCHAR(20) DEFAULT 'unread' NOT NULL,
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT CK_Notifications_Status CHECK (Status IN ('unread', 'read')),
+    CONSTRAINT FK_Notifications_Users FOREIGN KEY (UserID) REFERENCES Users(UserID)
+);
+
+-- Table Admins
+CREATE TABLE Admins (
+    AdminID INT PRIMARY KEY,
+    Permissions TEXT,
+    LastActionLog TEXT,
+    CONSTRAINT FK_Admins_Users FOREIGN KEY (AdminID) REFERENCES Users(UserID)
+);
+`;
 
 document.addEventListener('DOMContentLoaded', function () {
     const tabs = document.querySelectorAll('.tab-button');
@@ -773,10 +1166,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const entityDetail = document.getElementById('entityDetail');
     const relationshipList = document.getElementById('relationshipList');
     const relationshipDetail = document.getElementById('relationshipDetail');
-    const principlesAccordion = document.getElementById('principlesAccordion'); // This element is now removed, but the variable remains
     const constraintsList = document.getElementById('constraintsList');
     const mobileMenuButton = document.getElementById('mobileMenuButton');
     const mainNav = document.getElementById('mainNav');
+    const sqlCodeBlock = document.getElementById('sqlCodeBlock');
+    const copySqlButton = document.getElementById('copySqlButton');
 
     mobileMenuButton.addEventListener('click', () => {
         mainNav.classList.toggle('hidden');
@@ -798,14 +1192,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-    // Set initial active tab style for the new default tab (entities)
     const initialActiveTab = document.querySelector('.tab-button[data-tab="entities"]');
     if (initialActiveTab) {
         initialActiveTab.classList.add('active', 'text-sky-600', 'border-sky-600');
         initialActiveTab.classList.remove('text-stone-100');
-        document.getElementById('entities').classList.add('active'); // Ensure content is active
+        document.getElementById('entities').classList.add('active');
     }
-
 
     function populateEntityList() {
         entityList.innerHTML = '';
@@ -889,8 +1281,6 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
     }
     
-    // Removed populatePrinciples() function as the tab is removed.
-
     function populateConstraints() {
         constraintsList.innerHTML = '';
         constraintsData.forEach(constraint => {
@@ -918,9 +1308,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         document.getElementById('expiration-solution-title').textContent = data.expirationSolution.title;
         document.getElementById('expiration-solution-description').textContent = data.expirationSolution.description;
-        document.getElementById('inventory-lot-table-name').textContent = data.expirationSolution.table.name;
-        const inventoryLotAttributesBody = document.getElementById('inventory-lot-attributes');
-        inventoryLotAttributesBody.innerHTML = data.expirationSolution.table.attributes.map(attr => `
+        document.getElementById('products-hsd-table-name').textContent = data.expirationSolution.table.name;
+        const productsHsdAttributesBody = document.getElementById('products-hsd-attributes');
+        productsHsdAttributesBody.innerHTML = data.expirationSolution.table.attributes.map(attr => `
             <tr class="hover:bg-stone-50">
                 <td class="py-2 px-3 border-b border-stone-200 font-medium text-stone-700">${attr.name}</td>
                 <td class="py-2 px-3 border-b border-stone-200 text-sm text-sky-600">${attr.type}</td>
@@ -948,7 +1338,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function populateProductReviews() {
         const attributesBody = document.getElementById('product-reviews-attributes');
-        attributesBody.innerHTML = entitiesData.Product_Reviews.attributes.map(attr => `
+        attributesBody.innerHTML = entitiesData.ProductReviews.attributes.map(attr => `
             <tr class="hover:bg-stone-50">
                 <td class="py-2 px-3 border-b border-stone-200 font-medium text-stone-700">${attr.name}</td>
                 <td class="py-2 px-3 border-b border-stone-200 text-sm text-sky-600">${attr.type}</td>
@@ -977,14 +1367,48 @@ document.addEventListener('DOMContentLoaded', function () {
         `).join('');
     }
 
+    function populateSqlSchema() {
+        sqlCodeBlock.textContent = sqlSchemaData;
+    }
+
+    copySqlButton.addEventListener('click', () => {
+        const textToCopy = sqlCodeBlock.textContent;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            const originalText = copySqlButton.textContent;
+            copySqlButton.textContent = 'Đã sao chép!';
+            setTimeout(() => {
+                copySqlButton.textContent = originalText;
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            // Fallback for older browsers or if writeText fails
+            const textArea = document.createElement('textarea');
+            textArea.value = textToCopy;
+            textArea.style.position = 'fixed'; // Avoid scrolling to bottom
+            textArea.style.left = '-9999px'; // Hide from view
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                const originalText = copySqlButton.textContent;
+                copySqlButton.textContent = 'Đã sao chép!';
+                setTimeout(() => {
+                    copySqlButton.textContent = originalText;
+                }, 2000);
+            } catch (e) {
+                console.error('Fallback: Could not copy text', e);
+            }
+            document.body.removeChild(textArea);
+        });
+    });
 
     populateEntityList();
     populateRelationshipList();
-    // populatePrinciples(); // Removed call to this function
     populateConstraints();
     populateExpirationRepurposing();
     populateProductReviews();
     populatePromotionsCoupons();
+    populateSqlSchema();
 });
 </script>
 </body>
