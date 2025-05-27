@@ -3,1413 +3,577 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khám Phá Thiết Kế CSDL eCommerce (DBML & SQL Cập Nhật)</title>
+    <title>Khám Phá Thiết Kế DB Ecommerce</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Visualization & Content Choices:
-        - Report Info: SQL Constraints (PK, FK, NOT NULL, UNIQUE, CHECK, DEFAULT) -> Goal: Inform, Understand Rules -> Presentation: Textual descriptions, bulleted examples per constraint. -> Interaction: Static display within tab. -> Justification: Clear explanation of fundamental DB rules. Method: HTML/CSS.
-        - Report Info: Product Expiration & Repurposing (revised) -> Goal: Problem/Solution Analysis, Understand Advanced Modeling -> Presentation: Problem statement, updated table structures (Products with 'ImportDate', 'ExpirationDate', ProductTransformations linking directly to Products) with attributes listed in HTML tables, and textual explanations for their necessity. -> Interaction: Static display. -> Justification: Adheres to user's new DBML, clarifies direct product-to-product transformation. Method: HTML/CSS tables for schema.
-        - Report Info: Product Reviews -> Goal: Inform, Understand Business Logic -> Presentation: Entity Product_Reviews with attributes and explanation of purchase-based review logic. -> Interaction: Static display. -> Justification: Addresses user request. Method: HTML/CSS table.
-        - Report Info: Sales & Coupons -> Goal: Inform, Understand Business Logic -> Presentation: Entities Sales and Coupons with detailed attributes and their specific functionalities. -> Interaction: Static display. -> Justification: Addresses user request. Method: HTML/CSS tables.
-        - Report Info: Full SQL Schema -> Goal: Provide executable SQL -> Presentation: Pre-formatted SQL CREATE TABLE statements in a code block. -> Interaction: Copyable text. -> Justification: Direct user request for SQL. Method: HTML pre/code.
-        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
-    -->
+        - Introduction: Text summaries. Goal: Inform. Method: HTML text blocks.
+        - Core E-commerce Entities (Sec 2.1, 4): Interactive HTML lists/tables for Users, Products, Orders, etc. Goal: Organize/Inform. Method: HTML + JS toggle for details. Interaction: Click to expand.
+        - RBAC Concepts (Sec 3, 5): Text summaries, interactive lists for Roles, Permissions. Goal: Inform/Organize. Method: HTML + JS. Interaction: Click to see role details/permissions.
+        - RBAC Roles (Sec 6): Detailed views for Customer, Seller, Admin, Staff, Farm roles with their permissions. Goal: Compare/Inform. Method: HTML + JS. Interaction: Select role to view details.
+        - RBAC Charts (Conceptual):
+            - Role Distribution: Goal: Inform. Viz: Pie Chart (Chart.js). Interaction: Hover for details. Data: Sample. Justification: Visual overview of user types.
+            - Permissions per Module: Goal: Inform. Viz: Bar Chart (Chart.js). Interaction: Hover for details. Data: Sample based on report. Justification: Illustrate permission granularity.
+        - Farm Produce Management (Sec 7): Text summaries, interactive HTML lists for Farms, FarmProducts, Batches, Inventory. Visual flow representation (HTML/CSS). Goal: Inform/Organize. Method: HTML + JS. Interaction: Click to expand table details.
+        - Integrated Schema (Sec 8): Simplified interactive representation of key table relationships using HTML/CSS. Goal: Relationships. Method: HTML + JS click to highlight. Interaction: Click table to see related tables.
+        - Best Practices & Conclusion (Sec 9, 10): Text summaries. Goal: Inform. Method: HTML text blocks.
+        - NO SVG graphics used. NO Mermaid JS used. All diagrams/flows via HTML/CSS/Tailwind. Charts via Chart.js. -->
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
+        body { font-family: 'Inter', sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .table-diagram-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: flex-start;
         }
-        .tab-content {
-            display: none;
+        .table-block {
+            border: 1px solid #e2e8f0; /* slate-200 */
+            border-radius: 0.375rem; /* rounded-md */
+            padding: 1rem;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 150px;
         }
-        .tab-content.active {
-            display: block;
-        }
-        .tab-button.active {
-            border-bottom-width: 2px;
+        .table-block:hover, .table-block.highlighted {
             border-color: #0284c7; /* sky-600 */
-            color: #0284c7; /* sky-600 */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .table-block h4 {
             font-weight: 600;
+            color: #1e293b; /* slate-800 */
         }
-        .accordion-content {
-            display: none;
-            transition: max-height 0.3s ease-out;
-            overflow: hidden;
+        .table-block ul {
+            list-style-type: none;
+            padding-left: 0;
+            font-size: 0.875rem; /* text-sm */
+            color: #475569; /* slate-600 */
         }
-        .accordion-button.active .accordion-icon {
-            transform: rotate(180deg);
-        }
-        .entity-list-item.active {
-            background-color: #d1fae5; /* emerald-100 */
-            color: #059669; /* emerald-600 */
-            font-weight: 500;
-        }
-        .relationship-list-item.active {
-            background-color: #e0f2fe; /* sky-100 */
-            color: #0284c7; /* sky-600 */
-            font-weight: 500;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9; /* stone-100 */
-            border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #94a3b8; /* stone-400 */
-            border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #64748b; /* stone-500 */
+        .relationship-lines {
+            position: relative;
+            width: 100%;
+            min-height: 50px; /* Adjust as needed */
         }
         .chart-container {
             position: relative;
             width: 100%;
-            max-width: 600px;
+            max-width: 500px; /* Tailwind max-w-lg */
             margin-left: auto;
             margin-right: auto;
-            height: 300px;
-            max-height: 400px;
+            height: 300px; /* Base height */
+            max-height: 350px;
         }
-        @media (min-width: 768px) {
+        @media (min-width: 768px) { /* md breakpoint */
             .chart-container {
                 height: 350px;
+                max-height: 400px;
             }
         }
-        .tab-inner-content {
-            padding: 1.5rem; /* p-6 */
-        }
-        table th, table td {
-            padding: 0.75rem; /* p-3 */
-            vertical-align: top;
-        }
-        pre {
-            background-color: #1a202c; /* gray-900 */
-            color: #e2e8f0; /* gray-200 */
+        .details-section {
+            background-color: #f8fafc; /* slate-50 */
+            border: 1px solid #e2e8f0; /* slate-200 */
+            border-radius: 0.375rem; /* rounded-md */
             padding: 1rem;
-            border-radius: 0.5rem;
-            overflow-x: auto;
-            font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
-            font-size: 0.875rem;
-            line-height: 1.5;
+            margin-top: 0.5rem;
+        }
+        .accordion-button {
+            background-color: #f1f5f9; /* slate-100 */
+            color: #1e293b; /* slate-800 */
+            cursor: pointer;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            text-align: left;
+            border: none;
+            border-radius: 0.375rem; /* rounded-md */
+            outline: none;
+            transition: background-color 0.3s ease;
+            font-weight: 500;
+        }
+        .accordion-button:hover {
+            background-color: #e2e8f0; /* slate-200 */
+        }
+        .accordion-content {
+            padding: 0.75rem;
+            background-color: white;
+            border: 1px solid #e2e8f0; /* slate-200 */
+            border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem; /* rounded-b-md */
+            display: none;
+        }
+        .accordion-content.active {
+            display: block;
+        }
+        .flow-step {
+            background-color: #e0f2fe; /* sky-100 */
+            border: 1px dashed #7dd3fc; /* sky-300 */
+            padding: 0.75rem;
+            border-radius: 0.375rem; /* rounded-md */
+            text-align: center;
+        }
+        .flow-arrow {
+            font-size: 1.5rem; /* text-2xl */
+            color: #38bdf8; /* sky-400 */
+            margin: 0 0.5rem;
+            align-self: center;
         }
     </style>
 </head>
-<body class="bg-stone-100 text-stone-800">
-    <header class="bg-sky-700 text-white shadow-md sticky top-0 z-50">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <h1 class="text-xl sm:text-2xl font-semibold">📊 Thiết Kế CSDL Sàn Thương Mại Điện Tử</h1>
-                <button id="mobileMenuButton" class="md:hidden p-2 rounded-md text-stone-200 hover:text-white hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
-                    </svg>
-                </button>
-            </div>
-            <nav id="mainNav" class="md:flex md:space-x-2 border-t border-sky-600 md:border-none hidden md:block">
-                <button class="tab-button active text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="entities">🧩 Các Thực Thể</button>
-                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="relationships">🔗 Mối Quan Hệ</button>
-                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="constraints">🔒 Ràng Buộc</button>
-                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="expiration-repurpose">♻️ HSD & Tái Chế</button>
-                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="product-reviews">⭐ Đánh Giá SP</button>
-                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="promotions-coupons">🎁 Khuyến Mãi & Coupon</button>
-                <button class="tab-button text-sm font-medium py-3 px-2 xl:px-3 text-stone-100 hover:text-white hover:bg-sky-600 rounded-t-md" data-tab="sql-schema">📄 Lược Đồ SQL</button>
-            </nav>
-        </div>
-    </header>
+<body class="bg-slate-50 text-slate-800 p-4 md:p-8">
+    <div class="container mx-auto max-w-6xl bg-white shadow-xl rounded-lg p-6 md:p-10">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-sky-700">Thiết Kế Cơ Sở Dữ Liệu Hệ Thống Thương Mại Điện Tử</h1>
+            <p class="text-slate-600 mt-2">Khám phá tương tác về RBAC và Quản lý Kho Nông Sản</p>
+        </header>
 
-    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
-        <div id="entities" class="tab-content active bg-white shadow-lg rounded-lg">
-            <div class="tab-inner-content">
-                <h2 class="text-2xl font-semibold text-sky-700 mb-6">I. Xác Định Các Thực Thể Chính và Thuộc Tính</h2>
-                <p class="mb-6 text-stone-700 leading-relaxed">Thiết kế cơ sở dữ liệu cho sàn thương mại điện tử đa bên đòi hỏi quản lý thông tin chi tiết cho nhiều loại người dùng và đối tượng kinh doanh. Dưới đây là các thực thể chính và thuộc tính của chúng. Chọn một thực thể từ danh sách bên trái để xem chi tiết các thuộc tính và mô tả của nó.</p>
-                <div class="md:flex md:space-x-6">
-                    <div class="md:w-1/3 mb-6 md:mb-0">
-                        <h3 class="text-lg font-semibold text-sky-600 mb-3">Danh sách thực thể:</h3>
-                        <ul id="entityList" class="space-y-2 custom-scrollbar overflow-y-auto max-h-[calc(100vh-250px)] pr-2">
+        <nav class="mb-8">
+            <ul class="flex flex-wrap justify-center border-b border-slate-300">
+                <li class="mr-1"><button data-tab="intro" class="tab-button active-tab bg-sky-600 text-white py-2 px-4 rounded-t-lg focus:outline-none">Giới Thiệu</button></li>
+                <li class="mr-1"><button data-tab="core-entities" class="tab-button py-2 px-4 rounded-t-lg hover:bg-sky-100 focus:outline-none">Thực Thể Cốt Lõi</button></li>
+                <li class="mr-1"><button data-tab="rbac" class="tab-button py-2 px-4 rounded-t-lg hover:bg-sky-100 focus:outline-none">RBAC</button></li>
+                <li class="mr-1"><button data-tab="farm-management" class="tab-button py-2 px-4 rounded-t-lg hover:bg-sky-100 focus:outline-none">QL Kho Nông Sản</button></li>
+                <li class="mr-1"><button data-tab="schema" class="tab-button py-2 px-4 rounded-t-lg hover:bg-sky-100 focus:outline-none">Lược Đồ Tích Hợp</button></li>
+                <li class="mr-1"><button data-tab="best-practices" class="tab-button py-2 px-4 rounded-t-lg hover:bg-sky-100 focus:outline-none">Thực Tiễn Tốt</button></li>
+                <li><button data-tab="conclusion" class="tab-button py-2 px-4 rounded-t-lg hover:bg-sky-100 focus:outline-none">Kết Luận</button></li>
+            </ul>
+        </nav>
+
+        <main>
+            <section id="intro" class="tab-content active">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-4">1. Giới Thiệu Chung</h2>
+                <p class="mb-4 text-slate-700 leading-relaxed">Phần này tóm tắt mục tiêu của báo cáo thiết kế cơ sở dữ liệu: xây dựng một hệ thống thương mại điện tử toàn diện, tích hợp Kiểm soát Truy cập Dựa trên Vai trò (RBAC) và quản lý kho chuyên biệt cho nông sản. Thiết kế nhấn mạnh bảo mật, tính toàn vẹn dữ liệu, khả năng mở rộng và hiệu quả, đặc biệt là việc theo dõi lô hàng và ngày hết hạn của nông sản.</p>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="bg-sky-50 p-4 rounded-lg shadow">
+                        <h3 class="font-semibold text-sky-600 mb-2">🎯 Mục Tiêu Chính</h3>
+                        <p class="text-sm text-slate-600">Xây dựng DB TMĐT an toàn, mở rộng với RBAC và quản lý kho nông sản hiệu quả.</p>
+                    </div>
+                    <div class="bg-sky-50 p-4 rounded-lg shadow">
+                        <h3 class="font-semibold text-sky-600 mb-2">🔑 Nguyên Tắc Cốt Lõi</h3>
+                        <p class="text-sm text-slate-600">Đặc quyền tối thiểu, toàn vẹn dữ liệu, khả năng mở rộng, theo dõi lô hàng & HSD.</p>
+                    </div>
+                    <div class="bg-sky-50 p-4 rounded-lg shadow">
+                        <h3 class="font-semibold text-sky-600 mb-2">👤 Vai Trò Người Dùng</h3>
+                        <p class="text-sm text-slate-600">Quản lý Khách hàng, Người bán, Quản trị viên, Nhân viên, Nông trại.</p>
+                    </div>
+                </div>
+                 <p class="mt-6 text-slate-700 leading-relaxed">Kiến trúc cơ sở dữ liệu này không chỉ tập trung vào các giao dịch thương mại điện tử tiêu chuẩn mà còn giải quyết các thách thức đặc thù của việc quản lý sản phẩm nông nghiệp, nơi việc theo dõi nguồn gốc và độ tươi của sản phẩm là tối quan trọng. Việc tích hợp RBAC đảm bảo rằng các nhóm người dùng khác nhau chỉ có quyền truy cập vào dữ liệu và chức năng phù hợp với vai trò của họ, tăng cường bảo mật và hiệu quả hoạt động.</p>
+            </section>
+
+            <section id="core-entities" class="tab-content">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-4">2. Các Thực Thể Thương Mại Điện Tử Cốt Lõi (Mục 2.1, 4 Báo Cáo)</h2>
+                <p class="mb-6 text-slate-700 leading-relaxed">Hệ thống thương mại điện tử được xây dựng trên các thực thể dữ liệu cốt lõi. Nhấp vào từng bảng để xem các trường chính. Đây là nền tảng cho các hoạt động giao dịch và quản lý danh mục.</p>
+                <div id="coreEntitiesContainer" class="space-y-4"></div>
+            </section>
+
+            <section id="rbac" class="tab-content">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-4">3. Kiểm Soát Truy Cập Dựa Trên Vai Trò (RBAC) (Mục 3, 5, 6 Báo Cáo)</h2>
+                <p class="mb-4 text-slate-700 leading-relaxed">RBAC là một mô hình quản lý quyền truy cập dựa trên vai trò của người dùng trong tổ chức. Nó giúp đơn giản hóa việc quản lý quyền và tăng cường bảo mật.</p>
+                
+                <div class="mb-6">
+                    <button class="accordion-button">Các Khái Niệm Cốt Lõi của RBAC</button>
+                    <div class="accordion-content">
+                        <ul class="list-disc pl-5 space-y-2 text-slate-600">
+                            <li><strong>Người dùng:</strong> Các cá nhân hoặc thực thể truy cập hệ thống (khách hàng, người bán, admin,...).</li>
+                            <li><strong>Vai trò:</strong> Tập hợp các quyền hạn phản ánh chức năng công việc (ví dụ: 'Người Bán', 'Quản Trị Viên').</li>
+                            <li><strong>Quyền hạn:</strong> Quyền truy cập cụ thể để thực hiện hành động trên tài nguyên (ví dụ: 'sản phẩm:tạo', 'đơn_hàng:xem').</li>
                         </ul>
                     </div>
-                    <div id="entityDetail" class="md:w-2/3 p-4 border border-stone-200 rounded-lg bg-stone-50 min-h-[300px]">
-                        <p class="text-stone-500 italic">Chọn một thực thể từ danh sách để xem chi tiết.</p>
-                    </div>
                 </div>
-            </div>
-        </div>
 
-        <div id="relationships" class="tab-content bg-white shadow-lg rounded-lg">
-             <div class="tab-inner-content">
-                <h2 class="text-2xl font-semibold text-sky-700 mb-6">II. Mối Quan Hệ Giữa Các Thực Thể</h2>
-                <p class="mb-4 text-stone-700 leading-relaxed">Mối quan hệ là xương sống của cơ sở dữ liệu quan hệ, định nghĩa cách các thực thể tương tác. Việc thiết lập mối quan hệ chính xác là rất quan trọng để duy trì tính toàn vẹn dữ liệu và cho phép truy xuất thông tin hiệu quả.</p>
-                <div class="mb-6 p-4 border border-stone-200 rounded-lg bg-stone-50">
-                    <h3 class="text-xl font-semibold text-sky-600 mb-3">2.1. Các loại mối quan hệ</h3>
-                    <ul class="list-disc list-inside space-y-3 text-stone-700">
-                        <li><strong>Một-một (One-to-One - 1:1):</strong> Mỗi bản ghi ở Bảng A liên kết với một bản ghi ở Bảng B, và ngược lại. Ví dụ: `Users` và `User_Profiles` (nếu thông tin hồ sơ lớn/nhạy cảm).</li>
-                        <li><strong>Một-nhiều (One-to-Many - 1:N):</strong> Một bản ghi ở Bảng A liên kết với nhiều bản ghi ở Bảng B, nhưng mỗi bản ghi ở Bảng B chỉ liên kết với một ở Bảng A. Ví dụ: Một `Khách hàng` có nhiều `Đơn hàng`.</li>
-                        <li><strong>Nhiều-nhiều (Many-to-Many - M:N):</strong> Nhiều bản ghi ở Bảng A liên kết với nhiều bản ghi ở Bảng B, và ngược lại. Cần bảng trung gian. Ví dụ: `Sản phẩm` và `Đơn hàng` (thông qua `Chi tiết Đơn hàng`).</li>
-                    </ul>
-                </div>
-                <div class="md:flex md:space-x-6">
-                    <div class="md:w-1/3 mb-6 md:mb-0">
-                        <h3 class="text-lg font-semibold text-sky-600 mb-3">Danh sách mối quan hệ:</h3>
-                        <ul id="relationshipList" class="space-y-2 custom-scrollbar overflow-y-auto max-h-[calc(100vh-400px)] pr-2">
+                <div class="mb-6">
+                    <button class="accordion-button">Các Nguyên Tắc Chính của RBAC</button>
+                    <div class="accordion-content">
+                         <ul class="list-disc pl-5 space-y-2 text-slate-600">
+                            <li><strong>Đặc quyền tối thiểu:</strong> Chỉ cấp quyền truy cập tối thiểu cần thiết.</li>
+                            <li><strong>Phân tách nhiệm vụ:</strong> Phân chia trách nhiệm để tránh xung đột lợi ích và gian lận.</li>
+                            <li><strong>Trừu tượng hóa dữ liệu:</strong> Ẩn các chi tiết phức tạp, cung cấp giao diện đơn giản.</li>
                         </ul>
                     </div>
-                    <div id="relationshipDetail" class="md:w-2/3 p-4 border border-stone-200 rounded-lg bg-stone-50 min-h-[200px]">
-                        <p class="text-stone-500 italic">Chọn một mối quan hệ từ danh sách để xem chi tiết.</p>
-                    </div>
                 </div>
-            </div>
-        </div>
+                
+                <h3 class="text-xl font-semibold text-sky-600 mb-3 mt-6">Các Bảng RBAC Cốt Lõi</h3>
+                <div id="rbacTablesContainer" class="space-y-4 mb-6"></div>
 
-        <div id="constraints" class="tab-content bg-white shadow-lg rounded-lg">
-            <div class="tab-inner-content">
-                <h2 class="text-2xl font-semibold text-sky-700 mb-6">III. Ràng Buộc (Constraints) trong Cơ Sở Dữ Liệu SQL</h2>
-                <p class="mb-6 text-stone-700 leading-relaxed">Các ràng buộc trong SQL là những quy tắc được áp dụng cho các cột hoặc bảng trong cơ sở dữ liệu để giới hạn loại dữ liệu có thể được lưu trữ, đảm bảo tính chính xác, toàn vẹn và đáng tin cậy của dữ liệu. Chúng giúp ngăn chặn việc nhập dữ liệu không hợp lệ hoặc không nhất quán.</p>
-                <div id="constraintsList" class="space-y-6">
-                </div>
-            </div>
-        </div>
-
-        <div id="expiration-repurpose" class="tab-content bg-white shadow-lg rounded-lg">
-            <div class="tab-inner-content">
-                <h2 class="text-2xl font-semibold text-sky-700 mb-6">IV. Quản Lý Hạn Sử Dụng & Tái Chế Sản Phẩm</h2>
-                <p class="mb-4 text-stone-700 leading-relaxed">Trong một số ngành hàng như thực phẩm, dược phẩm, việc quản lý hạn sử dụng (HSD) của sản phẩm là rất quan trọng. Đồng thời, khả năng tái chế hoặc chuyển đổi sản phẩm gần hết hạn thành một dạng sản phẩm khác (ví dụ: cà rốt tươi thành nước ép cà rốt) có thể giúp giảm thiểu lãng phí và tối ưu hóa giá trị. Phần này sẽ thảo luận về cách mở rộng mô hình cơ sở dữ liệu để giải quyết các yêu cầu này.</p>
-
-                <div class="mb-8 p-6 border border-amber-300 rounded-lg bg-amber-50 shadow">
-                    <h3 class="text-xl font-semibold text-amber-700 mb-3" id="problem-title"></h3>
-                    <p class="text-stone-700 leading-relaxed" id="problem-description"></p>
+                <h3 class="text-xl font-semibold text-sky-600 mb-3 mt-6">Định Nghĩa Các Vai Trò Cụ Thể</h3>
+                <p class="mb-4 text-slate-700">Chọn một vai trò để xem mô tả và các quyền hạn liên quan.</p>
+                <select id="roleSelector" class="w-full md:w-1/2 p-2 border border-slate-300 rounded-md mb-4 focus:ring-sky-500 focus:border-sky-500">
+                    <option value="">-- Chọn Vai Trò --</option>
+                </select>
+                <div id="roleDetails" class="details-section min-h-[100px]">
+                    <p class="text-slate-500">Thông tin chi tiết về vai trò sẽ được hiển thị ở đây.</p>
                 </div>
 
-                <div class="mb-8">
-                    <h3 class="text-xl font-semibold text-sky-600 mb-3" id="expiration-solution-title"></h3>
-                    <p class="mb-4 text-stone-700 leading-relaxed" id="expiration-solution-description"></p>
-                    <div class="p-4 border border-emerald-200 rounded-lg bg-emerald-50">
-                        <h4 class="text-lg font-semibold text-emerald-700 mb-2" id="products-hsd-table-name"></h4>
-                        <div class="overflow-x-auto shadow rounded-md">
-                            <table class="min-w-full bg-white border border-stone-200">
-                                <thead class="bg-stone-100">
-                                    <tr>
-                                        <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Tên Thuộc Tính</th>
-                                        <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Loại (PK/FK/CHECK)</th>
-                                        <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Mô Tả</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="products-hsd-attributes" class="divide-y divide-stone-200"></tbody>
-                            </table>
+                <h3 class="text-xl font-semibold text-sky-600 mb-3 mt-8">Biểu Đồ Minh Họa (Dữ liệu mẫu)</h3>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="text-lg font-medium text-center text-slate-700 mb-2">Phân Bố Vai Trò Người Dùng (Minh Họa)</h4>
+                        <div class="chart-container bg-white p-2 rounded-lg shadow">
+                            <canvas id="roleDistributionChart"></canvas>
                         </div>
-                        <p class="mt-4 text-sm text-stone-600 leading-relaxed" id="expiration-solution-explanation"></p>
+                        <p class="text-xs text-center text-slate-500 mt-1">Biểu đồ này minh họa tỷ lệ các loại người dùng trong hệ thống (dữ liệu mẫu).</p>
                     </div>
-                </div>
-
-                <div class="mb-8">
-                    <h3 class="text-xl font-semibold text-sky-600 mb-3" id="repurposing-solution-title"></h3>
-                    <p class="mb-4 text-stone-700 leading-relaxed" id="repurposing-solution-description"></p>
-                    <div class="p-4 border border-emerald-200 rounded-lg bg-emerald-50">
-                        <h4 class="text-lg font-semibold text-emerald-700 mb-2" id="product-transformation-table-name"></h4>
-                        <div class="overflow-x-auto shadow rounded-md">
-                            <table class="min-w-full bg-white border border-stone-200">
-                                <thead class="bg-stone-100">
-                                    <tr>
-                                        <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Tên Thuộc Tính</th>
-                                        <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Loại (PK/FK)</th>
-                                        <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Mô Tả</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="product-transformation-attributes" class="divide-y divide-stone-200"></tbody>
-                            </table>
+                    <div>
+                        <h4 class="text-lg font-medium text-center text-slate-700 mb-2">Số Lượng Quyền Hạn Theo Module (Minh Họa)</h4>
+                        <div class="chart-container bg-white p-2 rounded-lg shadow">
+                            <canvas id="permissionsPerModuleChart"></canvas>
                         </div>
-                        <p class="mt-4 text-sm text-stone-600 leading-relaxed" id="repurposing-solution-explanation"></p>
+                         <p class="text-xs text-center text-slate-500 mt-1">Biểu đồ này minh họa sự phân bổ quyền hạn theo các module chức năng (dữ liệu mẫu).</p>
                     </div>
                 </div>
+            </section>
 
-                <div class="p-6 border border-rose-300 rounded-lg bg-rose-50 shadow">
-                    <h3 class="text-xl font-semibold text-rose-700 mb-3" id="need-for-new-tables-title"></h3>
-                    <p class="text-stone-700 leading-relaxed" id="need-for-new-tables-explanation"></p>
+            <section id="farm-management" class="tab-content">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-4">4. Quản Lý Kho Nông Sản Chuyên Biệt (Mục 7 Báo Cáo)</h2>
+                <p class="mb-6 text-slate-700 leading-relaxed">Phần này tập trung vào việc quản lý các sản phẩm nông nghiệp, đặc biệt là hàng hóa dễ hỏng, với khả năng theo dõi lô hàng và ngày hết hạn.</p>
+                
+                <h3 class="text-xl font-semibold text-sky-600 mb-3">Luồng Quản Lý Tồn Kho Nông Sản</h3>
+                <div class="flex flex-col md:flex-row items-center justify-around p-4 bg-slate-100 rounded-lg mb-6">
+                    <div class="flow-step mb-2 md:mb-0">Nông Trại (Farms)</div>
+                    <div class="flow-arrow transform md:rotate-0 rotate-90">➔</div>
+                    <div class="flow-step mb-2 md:mb-0">Sản Phẩm Nông Trại (FarmProducts)</div>
+                    <div class="flow-arrow transform md:rotate-0 rotate-90">➔</div>
+                    <div class="flow-step mb-2 md:mb-0">Lô Hàng (Batches)</div>
+                    <div class="flow-arrow transform md:rotate-0 rotate-90">➔</div>
+                    <div class="flow-step">Tồn Kho (Inventory)</div>
                 </div>
-            </div>
-        </div>
+                <p class="mb-4 text-slate-700 leading-relaxed">Quy trình này đảm bảo khả năng truy xuất nguồn gốc từ nông trại đến tay người tiêu dùng, quản lý hiệu quả hạn sử dụng (FEFO - Hết hạn trước, xuất trước) và giảm thiểu lãng phí.</p>
 
-        <div id="product-reviews" class="tab-content bg-white shadow-lg rounded-lg">
-            <div class="tab-inner-content">
-                <h2 class="text-2xl font-semibold text-sky-700 mb-6">V. Đánh Giá Sản Phẩm (Product Reviews)</h2>
-                <p class="mb-4 text-stone-700 leading-relaxed">Hệ thống đánh giá sản phẩm là một tính năng quan trọng giúp người mua đưa ra quyết định thông minh và cung cấp phản hồi có giá trị cho người bán. Để đảm bảo tính xác thực, chỉ những người dùng đã mua sản phẩm mới có thể đánh giá.</p>
-                <div class="p-4 border border-emerald-200 rounded-lg bg-emerald-50 shadow">
-                    <h3 class="text-xl font-semibold text-emerald-700 mb-3">Thực thể: `ProductReviews`</h3>
-                    <p class="mb-4 text-stone-700 leading-relaxed">Bảng này lưu trữ thông tin về các đánh giá sản phẩm từ người dùng.</p>
-                    <div class="overflow-x-auto shadow rounded-md">
-                        <table class="min-w-full bg-white border border-stone-200">
-                            <thead class="bg-stone-100">
-                                <tr>
-                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Tên Thuộc Tính</th>
-                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Loại (PK/FK/Ràng buộc)</th>
-                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Mô Tả</th>
-                                </tr>
-                            </thead>
-                            <tbody id="product-reviews-attributes" class="divide-y divide-stone-200">
-                                </tbody>
-                        </table>
+                <h3 class="text-xl font-semibold text-sky-600 mb-3 mt-6">Các Bảng Quản Lý Nông Sản</h3>
+                <div id="farmTablesContainer" class="space-y-4"></div>
+                 <div class="mt-6 bg-sky-50 p-4 rounded-lg shadow">
+                    <h4 class="font-semibold text-sky-600 mb-2">Chiến Lược FEFO (First Expired, First Out)</h4>
+                    <p class="text-sm text-slate-600 leading-relaxed">Khi xử lý đơn hàng cho sản phẩm dễ hỏng, hệ thống ưu tiên xuất các lô hàng có ngày hết hạn sớm nhất. Điều này đòi hỏi truy vấn bảng `Batches`, sắp xếp theo `expiry_date` và cập nhật `current_quantity`. Bảng `OrderItems` sẽ ghi lại `batch_id` của sản phẩm được giao để đảm bảo truy xuất nguồn gốc.</p>
+                </div>
+            </section>
+
+            <section id="schema" class="tab-content">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-4">5. Lược Đồ Cơ Sở Dữ Liệu Tích Hợp (Tổng Quan ERD - Mục 8 Báo Cáo)</h2>
+                <p class="mb-6 text-slate-700 leading-relaxed">Sơ đồ quan hệ thực thể (ERD) cung cấp cái nhìn tổng quan về các bảng và mối quan hệ của chúng. Dưới đây là một biểu diễn tương tác đơn giản hóa. Nhấp vào một bảng để xem các bảng liên quan chính của nó (mối quan hệ được đánh dấu màu).</p>
+                
+                <div class="table-diagram-container" id="interactiveErd">
                     </div>
-                    <p class="mt-4 text-sm text-stone-600 leading-relaxed">
-                        <strong>Cách hoạt động:</strong>
-                        <ul class="list-disc list-inside ml-4 space-y-1">
-                            <li>Khi người dùng mua một sản phẩm trong một đơn hàng, một bản ghi `OrderItem` được tạo.</li>
-                            <li>Người dùng chỉ có thể tạo đánh giá cho một `ProductID` cụ thể thông qua một `OrderItemID` đã mua. Điều này đảm bảo rằng đánh giá là hợp lệ và liên quan đến một giao dịch mua thực tế.</li>
-                            <li>Ràng buộc `UNIQUE (OrderItemID)` đảm bảo mỗi mục sản phẩm trong đơn hàng chỉ được đánh giá một lần.</li>
-                            <li>Trạng thái `Status` giúp quản trị viên kiểm duyệt đánh giá trước khi hiển thị công khai.</li>
-                        </ul>
-                    </p>
+                <div id="relationshipInfo" class="mt-4 p-3 bg-sky-50 rounded-md text-sm text-sky-700 min-h-[50px]">
+                    Chọn một bảng để xem các mối quan hệ của nó.
                 </div>
-            </div>
-        </div>
+            </section>
 
-        <div id="promotions-coupons" class="tab-content bg-white shadow-lg rounded-lg">
-            <div class="tab-inner-content">
-                <h2 class="text-2xl font-semibold text-sky-700 mb-6">VI. Khuyến Mãi (Sales) & Mã Giảm Giá (Coupons)</h2>
-                <p class="mb-4 text-stone-700 leading-relaxed">Các chương trình khuyến mãi và mã giảm giá là công cụ mạnh mẽ để thu hút khách hàng, tăng doanh số và quản lý tồn kho. Chúng được thiết kế để linh hoạt và có thể áp dụng theo nhiều quy tắc khác nhau.</p>
-
-                <div class="mb-8 p-4 border border-blue-200 rounded-lg bg-blue-50 shadow">
-                    <h3 class="text-xl font-semibold text-blue-700 mb-3">Thực thể: `Sales` (Chương Trình Giảm Giá Chung)</h3>
-                    <p class="mb-4 text-stone-700 leading-relaxed">Bảng này quản lý các chương trình giảm giá tổng thể áp dụng cho một nhóm sản phẩm hoặc toàn bộ sàn.</p>
-                    <div class="overflow-x-auto shadow rounded-md">
-                        <table class="min-w-full bg-white border border-stone-200">
-                            <thead class="bg-stone-100">
-                                <tr>
-                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Tên Thuộc Tính</th>
-                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Loại (PK/Ràng buộc)</th>
-                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Mô Tả</th>
-                                </tr>
-                            </thead>
-                            <tbody id="sales-attributes" class="divide-y divide-stone-200">
-                                </tbody>
-                        </table>
+            <section id="best-practices" class="tab-content">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-4">6. Các Thực Tiễn Tốt Nhất Về Bảo Mật và Triển Khai (Mục 9 Báo Cáo)</h2>
+                <div class="space-y-4">
+                    <div>
+                        <button class="accordion-button">Chuẩn Hóa Dữ Liệu và Các Mối Quan Hệ</button>
+                        <div class="accordion-content">
+                            <p class="text-slate-600">Giảm dư thừa, cải thiện tính toàn vẹn dữ liệu thông qua việc tổ chức bảng và cột hợp lý. Sử dụng khóa chính, khóa ngoại để thực thi mối quan hệ và tính toàn vẹn tham chiếu.</p>
+                        </div>
                     </div>
-                    <p class="mt-4 text-sm text-stone-600 leading-relaxed">
-                        <strong>Cách hoạt động:</strong>
-                        <ul class="list-disc list-inside ml-4 space-y-1">
-                            <li>`Sales` đại diện cho các sự kiện giảm giá lớn (ví dụ: 'Flash Sale', 'Giảm giá cuối năm').</li>
-                            <li>`DiscountType` và `DiscountValue` xác định mức giảm giá.</li>
-                            <li>`CategoryID` cho phép áp dụng giảm giá cho một danh mục cụ thể (hoặc NULL nếu áp dụng cho tất cả sản phẩm).</li>
-                            <li>Giá cuối cùng của sản phẩm trên sàn sẽ được tính toán dựa trên giá gốc và các chương trình `Sales` đang hoạt động.</li>
-                        </ul>
-                    </p>
-                </div>
-
-                <div class="p-4 border border-purple-200 rounded-lg bg-purple-50 shadow">
-                    <h3 class="text-xl font-semibold text-purple-700 mb-3">Thực thể: `Coupons` (Mã Giảm Giá)</h3>
-                    <p class="mb-4 text-stone-700 leading-relaxed">Bảng này quản lý các mã giảm giá cá nhân hoặc công khai mà người dùng có thể áp dụng khi thanh toán.</p>
-                    <div class="overflow-x-auto shadow rounded-md">
-                        <table class="min-w-full bg-white border border-stone-200">
-                            <thead class="bg-stone-100">
-                                <tr>
-                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Tên Thuộc Tính</th>
-                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Loại (PK/Ràng buộc)</th>
-                                    <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Mô Tả</th>
-                                </tr>
-                            </thead>
-                            <tbody id="coupons-attributes" class="divide-y divide-stone-200">
-                                </tbody>
-                        </table>
+                    <div>
+                        <button class="accordion-button">Thực Thi Kiểm Soát Truy Cập và Kiểm Toán</button>
+                        <div class="accordion-content">
+                            <p class="text-slate-600">Lớp ứng dụng phải truy vấn các bảng RBAC (`UserRoles`, `RolePermissions`) để xác định quyền hạn của người dùng. Ghi nhật ký hoạt động và các nỗ lực truy cập để theo dõi và tuân thủ.</p>
+                        </div>
                     </div>
-                    <p class="mt-4 text-sm text-stone-600 leading-relaxed">
-                        <strong>Cách hoạt động:</strong>
-                        <ul class="list-disc list-inside ml-4 space-y-1">
-                            <li>Người dùng nhập `Code` của coupon khi thanh toán.</li>
-                            <li>Hệ thống kiểm tra `StartDate`, `ExpirationDate`, `QuantityAvailable`, `UsageLimitPerCustomer` và `CategoryID` để xác định tính hợp lệ của coupon.</li>
-                            <li>Nếu hợp lệ, `DiscountValue` sẽ được áp dụng cho đơn hàng. `IsFreeShipping` sẽ được kiểm tra để miễn phí vận chuyển.</li>
-                            <li>Khi coupon được sử dụng, `QuantityAvailable` (nếu có) sẽ giảm và lịch sử sử dụng của khách hàng sẽ được ghi lại (có thể trong bảng `User_Coupon_Usage` riêng hoặc trong bảng `Orders`).</li>
-                        </ul>
-                    </p>
+                    <div>
+                        <button class="accordion-button">Khả Năng Mở Rộng và Tối Ưu Hóa Hiệu Suất</button>
+                        <div class="accordion-content">
+                            <p class="text-slate-600">Sử dụng chỉ mục chiến lược cho các cột thường xuyên truy vấn. Xem xét phân vùng cho các bảng lớn. Lựa chọn cơ sở dữ liệu phù hợp (SQL cho giao dịch, NoSQL cho dữ liệu ít cấu trúc).</p>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="accordion-button">Bảo Mật Dữ Liệu và Tuân Thủ</button>
+                        <div class="accordion-content">
+                            <p class="text-slate-600">Mã hóa dữ liệu nhạy cảm (mật khẩu, thanh toán) khi lưu trữ và truyền tải. Lưu trữ mật khẩu dưới dạng mã băm. Định kỳ xem xét và cập nhật vai trò, quyền hạn.</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </section>
 
-        <div id="sql-schema" class="tab-content bg-white shadow-lg rounded-lg">
-            <div class="tab-inner-content">
-                <h2 class="text-2xl font-semibold text-sky-700 mb-6">VII. Lược Đồ SQL (SQL Schema)</h2>
-                <p class="mb-4 text-stone-700 leading-relaxed">Dưới đây là các câu lệnh `CREATE TABLE` cho SQL Server, được tạo ra từ lược đồ DBML bạn đã cung cấp. Bạn có thể sao chép và sử dụng chúng để tạo cơ sở dữ liệu của mình.</p>
-                <div class="relative">
-                    <button id="copySqlButton" class="absolute top-3 right-3 bg-sky-600 text-white p-2 rounded-md hover:bg-sky-700 transition-colors duration-200 text-sm">Sao chép SQL</button>
-                    <pre id="sqlCodeBlock" class="mt-2"></pre>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <footer class="text-center p-4 text-sm text-stone-600 border-t border-stone-200 mt-8">
-        Ứng dụng tương tác dựa trên báo cáo thiết kế CSDL eCommerce.
-    </footer>
-
-<script>
-const entitiesData = {
-    "Roles": {
-        name: "Vai trò (Roles)",
-        description: "Lưu trữ các vai trò người dùng khác nhau trong hệ thống (ví dụ: Buyer, Seller, Admin).",
-        attributes: [
-            { name: "RoleID", type: "PK, increment", details: "Mã định danh duy nhất cho mỗi vai trò." },
-            { name: "RoleName", type: "UNIQUE, NOT NULL", details: "Tên vai trò (ví dụ: 'Buyer', 'Seller', 'Admin')." }
-        ]
-    },
-    "Users": {
-        name: "Người dùng (Users)",
-        description: "Lưu trữ thông tin chung cho tất cả các tài khoản người dùng trên nền tảng.",
-        attributes: [
-            { name: "UserID", type: "PK, increment", details: "Mã định danh duy nhất cho mỗi người dùng." },
-            { name: "Username", type: "UNIQUE, NOT NULL", details: "Tên đăng nhập, phải là duy nhất." },
-            { name: "PasswordHash", type: "NOT NULL", details: "Mật khẩu đã băm (để bảo mật)." },
-            { name: "FirstName", type: "", details: "Tên của người dùng." },
-            { name: "LastName", type: "", details: "Họ của người dùng." },
-            { name: "Email", type: "UNIQUE", details: "Địa chỉ email (duy nhất, dùng cho đăng nhập và liên hệ)." },
-            { name: "PhoneNumber", type: "UNIQUE, NOT NULL", details: "Số điện thoại liên hệ (duy nhất, không rỗng)." },
-            { name: "DateOfBirth", type: "date", details: "Ngày sinh của người dùng." },
-            { name: "ProfilePictureUrl", type: "", details: "Đường dẫn đến ảnh đại diện." },
-            { name: "RoleID", type: "FK (Roles.RoleID), NOT NULL", details: "Liên kết với vai trò của người dùng." },
-            { name: "RegistrationDate", type: "DEFAULT `getdate()`", details: "Ngày người dùng đăng ký tài khoản." },
-            { name: "LastLoginDate", type: "datetime", details: "Ngày đăng nhập cuối cùng của người dùng." },
-            { name: "Status", type: "DEFAULT 'active', NOT NULL", details: "Trạng thái tài khoản ('active', 'inactive', 'suspended')." }
-        ]
-    },
-    "Sellers": {
-        name: "Người bán (Sellers)",
-        description: "Mở rộng thông tin cho người dùng có vai trò là người bán, chứa các thuộc tính đặc thù của nhà cung cấp.",
-        attributes: [
-            { name: "SellerID", type: "PK, FK (Users.UserID)", details: "Mã định danh người bán, liên kết với Users." },
-            { name: "StoreName", type: "NOT NULL", details: "Tên cửa hàng hoặc thương hiệu." },
-            { name: "StoreDescription", type: "text", details: "Mô tả chi tiết về cửa hàng." },
-            { name: "BankAccountDetails", type: "", details: "Thông tin tài khoản ngân hàng (cần mã hóa)." },
-            { name: "BusinessLicenseNumber", type: "UNIQUE", details: "Số giấy phép kinh doanh (nếu có, phải là duy nhất)." },
-            { name: "SellerRating", type: "decimal(2,1), DEFAULT 0", details: "Điểm đánh giá trung bình (0-5)." },
-            { name: "JoinDate", type: "DEFAULT `getdate()`", details: "Ngày người bán tham gia." },
-            { name: "IsVerified", type: "boolean, DEFAULT false", details: "Trạng thái xác minh tài khoản người bán." }
-        ]
-    },
-    "Cities": {
-        name: "Thành phố (Cities)",
-        description: "Lưu trữ danh sách các thành phố/tỉnh thành.",
-        attributes: [
-            { name: "CityID", type: "PK, increment", details: "Mã định danh duy nhất cho thành phố." },
-            { name: "CityName", type: "UNIQUE, NOT NULL", details: "Tên thành phố." }
-        ]
-    },
-    "Districts": {
-        name: "Quận/Huyện (Districts)",
-        description: "Lưu trữ danh sách các quận/huyện thuộc về một thành phố.",
-        attributes: [
-            { name: "DistrictID", type: "PK, increment", details: "Mã định danh duy nhất cho quận/huyện." },
-            { name: "CityID", type: "FK (Cities.CityID), NOT NULL", details: "Liên kết với thành phố." },
-            { name: "DistrictName", type: "NOT NULL", details: "Tên quận/huyện." }
-        ]
-    },
-    "Addresses": {
-        name: "Địa chỉ (Addresses)",
-        description: "Lưu trữ địa chỉ thanh toán và giao hàng của khách hàng.",
-        attributes: [
-            { name: "AddressID", type: "PK, increment", details: "Mã định danh duy nhất cho địa chỉ." },
-            { name: "UserID", type: "FK (Users.UserID), NOT NULL", details: "Liên kết với người dùng sở hữu địa chỉ." },
-            { name: "StreetAddress", type: "NOT NULL", details: "Số nhà, tên đường." },
-            { name: "CityID", type: "FK (Cities.CityID), NOT NULL", details: "Liên kết với thành phố." },
-            { name: "DistrictID", type: "FK (Districts.DistrictID), NOT NULL", details: "Liên kết với quận/huyện." },
-            { name: "AddressType", type: "NOT NULL, DEFAULT 'shipping'", details: "Loại địa chỉ ('shipping', 'billing', 'home', 'work')." },
-            { name: "IsDefault", type: "boolean, DEFAULT false", details: "Cờ chỉ định địa chỉ mặc định." }
-        ]
-    },
-    "Categories": {
-        name: "Danh mục (Categories)",
-        description: "Tổ chức các danh mục sản phẩm, giúp người dùng dễ dàng điều hướng.",
-        attributes: [
-            { name: "CategoryID", type: "PK, increment", details: "Mã định danh duy nhất cho danh mục." },
-            { name: "Name", type: "UNIQUE, NOT NULL", details: "Tên danh mục, phải là duy nhất." },
-            { name: "Description", type: "text", details: "Mô tả danh mục." },
-            { name: "ParentCategoryID", type: "FK (Categories.CategoryID)", details: "Cho phép cấu trúc danh mục phân cấp (có thể NULL)." }
-        ]
-    },
-    "Products": {
-        name: "Sản phẩm (Products)",
-        description: "Lưu trữ thông tin chi tiết của tất cả các sản phẩm được bán trên nền tảng.",
-        attributes: [
-            { name: "ProductID", type: "PK, increment", details: "Mã định danh duy nhất cho sản phẩm." },
-            { name: "SellerID", type: "FK (Sellers.SellerID), NOT NULL", details: "Liên kết sản phẩm với người bán." },
-            { name: "CategoryID", type: "FK (Categories.CategoryID), NOT NULL", details: "Liên kết sản phẩm với danh mục." },
-            { name: "Name", type: "NOT NULL", details: "Tên sản phẩm." },
-            { name: "Description", type: "text", details: "Mô tả chi tiết sản phẩm." },
-            { name: "Price", type: "decimal(18,2), NOT NULL", details: "Giá bán của sản phẩm." },
-            { name: "StockQuantity", type: "default: 0", details: "Số lượng sản phẩm còn trong kho." },
-            { name: "Unit", type: "", details: "Đơn vị tính của sản phẩm (ví dụ: 'cái', 'kg', 'lít')." },
-            { name: "ImageUrl", type: "", details: "Đường dẫn đến hình ảnh chính của sản phẩm." },
-            { name: "Status", type: "NOT NULL, default: 'available'", details: "Trạng thái sản phẩm ('available', 'out_of_stock', 'discontinued', 'hidden')." },
-            { name: "IsRecyclable", type: "boolean, default: false", details: "Cờ chỉ định sản phẩm có thể tái chế/chuyển đổi thành sản phẩm khác hay không." },
-            { name: "ImportDate", type: "date", details: "Ngày nhập sản phẩm vào kho." },
-            { name: "ExpirationDate", type: "date", details: "Ngày hết hạn của sản phẩm." },
-            { name: "CreatedAt", type: "default: `getdate()`", details: "Thời gian tạo bản ghi." },
-            { name: "UpdatedAt", type: "default: `getdate()`", details: "Thời gian cập nhật bản ghi." }
-        ]
-    },
-    "ProductImages": {
-        name: "Hình ảnh Sản phẩm (ProductImages)",
-        description: "Lưu trữ các hình ảnh bổ sung cho mỗi sản phẩm.",
-        attributes: [
-            { name: "ImageID", type: "PK, increment", details: "Mã định danh duy nhất cho hình ảnh." },
-            { name: "ProductID", type: "FK (Products.ProductID), NOT NULL", details: "Liên kết hình ảnh với sản phẩm." },
-            { name: "ImageUrl", type: "NOT NULL", details: "Đường dẫn đến hình ảnh." }
-        ]
-    },
-    "ShoppingCarts": {
-        name: "Giỏ hàng (ShoppingCarts)",
-        description: "Lưu trữ thông tin về giỏ hàng của người dùng.",
-        attributes: [
-            { name: "CartID", type: "PK, increment", details: "Mã định danh duy nhất cho giỏ hàng." },
-            { name: "UserID", type: "FK (Users.UserID), NOT NULL", details: "Liên kết giỏ hàng với người dùng." },
-            { name: "CreatedAt", type: "default: `getdate()`", details: "Thời gian tạo giỏ hàng." },
-            { name: "UpdatedAt", type: "datetime", details: "Thời gian cập nhật giỏ hàng lần cuối." }
-        ]
-    },
-    "CartItems": {
-        name: "Mục trong Giỏ hàng (CartItems)",
-        description: "Lưu trữ các sản phẩm và số lượng trong mỗi giỏ hàng.",
-        attributes: [
-            { name: "CartItemID", type: "PK, increment", details: "Mã định danh duy nhất cho mục trong giỏ hàng." },
-            { name: "CartID", type: "FK (ShoppingCarts.CartID), NOT NULL", details: "Liên kết với giỏ hàng." },
-            { name: "ProductID", type: "FK (Products.ProductID), NOT NULL", details: "Liên kết với sản phẩm." },
-            { name: "Quantity", type: "NOT NULL", details: "Số lượng sản phẩm trong mục này." },
-            { name: "AddedAt", type: "default: `getdate()`", details: "Thời gian sản phẩm được thêm vào giỏ hàng." }
-        ]
-    },
-    "Wishlists": {
-        name: "Danh sách yêu thích (Wishlists)",
-        description: "Lưu trữ danh sách yêu thích của người dùng, bao gồm sản phẩm và thời gian thêm. Mỗi cặp UserID-ProductID là duy nhất.",
-        attributes: [
-            { name: "WishlistID", type: "PK, increment", details: "Mã định danh duy nhất cho mục trong danh sách yêu thích." },
-            { name: "UserID", type: "FK (Users.UserID), NOT NULL", details: "Liên kết danh sách yêu thích với người dùng." },
-            { name: "ProductID", type: "FK (Products.ProductID), NOT NULL", details: "Liên kết với sản phẩm được thêm vào danh sách yêu thích." },
-            { name: "AddedAt", type: "default: `getdate()`", details: "Thời gian sản phẩm được thêm vào danh sách yêu thích." }
-        ]
-    },
-    "DeliveryPartners": {
-        name: "Đối tác Vận chuyển (DeliveryPartners)",
-        description: "Lưu trữ thông tin về các đối tác vận chuyển của sàn.",
-        attributes: [
-            { name: "PartnerID", type: "PK, increment", details: "Mã định danh duy nhất cho đối tác vận chuyển." },
-            { name: "Name", type: "UNIQUE, NOT NULL", details: "Tên đối tác vận chuyển." },
-            { name: "ContactPerson", type: "", details: "Người liên hệ của đối tác." },
-            { name: "PhoneNumber", type: "UNIQUE", details: "Số điện thoại liên hệ (duy nhất)." },
-            { name: "Email", type: "UNIQUE", details: "Địa chỉ email (duy nhất)." },
-            { name: "ServiceArea", type: "text", details: "Khu vực hoạt động của đối tác." },
-            { name: "Rating", type: "decimal(2,1)", details: "Đánh giá trung bình của đối tác (0-5)." },
-            { name: "CreatedAt", type: "default: `getdate()`", details: "Thời gian tạo bản ghi." }
-        ]
-    },
-    "Orders": {
-        name: "Đơn hàng (Orders)",
-        description: "Quản lý và xử lý đơn hàng của khách hàng.",
-        attributes: [
-            { name: "OrderID", type: "PK, increment", details: "Mã định danh duy nhất cho mỗi đơn hàng." },
-            { name: "UserID", type: "FK (Users.UserID), NOT NULL", details: "Liên kết đơn hàng với người dùng đặt hàng." },
-            { name: "OrderDate", type: "default: `getdate()`", details: "Ngày và giờ đặt hàng." },
-            { name: "TotalAmount", type: "decimal(18,2), NOT NULL", details: "Tổng giá trị của đơn hàng." },
-            { name: "Status", type: "default: 'pending', NOT NULL", details: "Trạng thái đơn hàng ('pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded')." },
-            { name: "ShippingAddressID", type: "FK (Addresses.AddressID), NOT NULL", details: "Địa chỉ giao hàng." },
-            { name: "BillingAddressID", type: "FK (Addresses.AddressID), NOT NULL", details: "Địa chỉ thanh toán." },
-            { name: "DeliveryPartnerID", type: "FK (DeliveryPartners.PartnerID)", details: "Đối tác vận chuyển chịu trách nhiệm." },
-            { name: "DeliveryInstructions", type: "", details: "Hướng dẫn giao hàng đặc biệt." },
-            { name: "EstimatedDeliveryDate", type: "date", details: "Ngày giao hàng dự kiến." },
-            { name: "ActualDeliveryDate", type: "date", details: "Ngày giao hàng thực tế." },
-            { name: "PaymentMethodID", type: "FK (PaymentMethods.MethodID)", details: "Phương thức thanh toán được sử dụng." },
-            { name: "Notes", type: "text", details: "Ghi chú thêm về đơn hàng." }
-        ]
-    },
-    "OrderItems": {
-        name: "Mục trong Đơn hàng (OrderItems)",
-        description: "Chứa thông tin chi tiết của từng mặt hàng trong một đơn hàng.",
-        attributes: [
-            { name: "OrderItemID", type: "PK, increment", details: "Mã định danh duy nhất cho chi tiết đơn hàng." },
-            { name: "OrderID", type: "FK (Orders.OrderID), NOT NULL", details: "Liên kết với đơn hàng." },
-            { name: "ProductID", type: "FK (Products.ProductID), NOT NULL", details: "Liên kết với sản phẩm." },
-            { name: "Quantity", type: "NOT NULL", details: "Số lượng sản phẩm đặt." },
-            { name: "PriceAtPurchase", type: "decimal(18,2), NOT NULL", details: "Giá sản phẩm tại thời điểm mua." },
-            { name: "SellerID", type: "FK (Sellers.SellerID), NOT NULL", details: "Người bán của sản phẩm này trong đơn hàng." }
-        ]
-    },
-    "PaymentMethods": {
-        name: "Phương thức Thanh toán (PaymentMethods)",
-        description: "Lưu trữ thông tin về các phương thức thanh toán khác nhau được hỗ trợ.",
-        attributes: [
-            { name: "MethodID", type: "PK, increment", details: "Mã định danh duy nhất." },
-            { name: "Name", type: "UNIQUE, NOT NULL", details: "Tên phương thức (ví dụ: 'Credit Card', 'PayPal')." },
-            { name: "Description", type: "text", details: "Mô tả chi tiết." },
-            { name: "IsActive", type: "boolean, default: true", details: "Cờ chỉ định phương thức có hoạt động không." }
-        ]
-    },
-    "Payments": {
-        name: "Thanh toán (Payments)",
-        description: "Lưu trữ thông tin chi tiết về từng giao dịch thanh toán thực tế.",
-        attributes: [
-            { name: "PaymentID", type: "PK, increment", details: "Mã định danh duy nhất cho giao dịch." },
-            { name: "OrderID", type: "FK (Orders.OrderID), UNIQUE, NOT NULL", details: "Liên kết với đơn hàng (thường là 1:1 với Order)." },
-            { name: "MethodID", type: "FK (PaymentMethods.MethodID), NOT NULL", details: "Phương thức thanh toán sử dụng." },
-            { name: "Amount", type: "decimal(18,2), NOT NULL", details: "Số tiền đã thanh toán." },
-            { name: "PaymentDate", type: "default: `getdate()`", details: "Ngày và giờ thanh toán." },
-            { name: "Status", type: "default: 'pending', NOT NULL", details: "Trạng thái thanh toán ('pending', 'completed', 'failed', 'refunded')." },
-            { name: "TransactionIDGateway", type: "UNIQUE", details: "Mã giao dịch từ cổng thanh toán (nếu có, thường là duy nhất)." },
-            { name: "UserID", type: "FK (Users.UserID), NOT NULL", details: "Người dùng thực hiện thanh toán." }
-        ]
-    },
-    "ProductTransformations": {
-        name: "Chuyển Đổi Sản Phẩm (ProductTransformations)",
-        description: "Ghi lại các giao dịch chuyển đổi sản phẩm, đặc biệt là từ sản phẩm gốc sang sản phẩm tái chế/mới.",
-        attributes: [
-            { name: "TransformationID", type: "PK, increment", details: "Mã định danh duy nhất cho mỗi giao dịch chuyển đổi." },
-            { name: "SourceProductID", type: "FK (Products.ProductID), NOT NULL", details: "Sản phẩm gốc được chuyển đổi." },
-            { name: "SourceImportDate", type: "date", details: "Ngày nhập của sản phẩm gốc (để tham chiếu lô cụ thể nếu cần)." },
-            { name: "SourceExpirationDate", type: "date", details: "Ngày hết hạn của sản phẩm gốc (để tham chiếu lô cụ thể nếu cần)." },
-            { name: "QuantityTransformed", type: "NOT NULL", details: "Số lượng sản phẩm gốc đã sử dụng trong quá trình chuyển đổi." },
-            { name: "DerivedProductID", type: "FK (Products.ProductID), NOT NULL", details: "Sản phẩm mới được tạo ra sau chuyển đổi (cũng là một Product trong bảng Products)." },
-            { name: "DerivedQuantityProduced", type: "NOT NULL", details: "Số lượng sản phẩm mới được tạo ra." },
-            { name: "TransformationDate", type: "default: `getdate()`", details: "Ngày và giờ thực hiện chuyển đổi." },
-            { name: "TransformedByUserID", type: "FK (Users.UserID)", details: "Người dùng (admin/seller) thực hiện chuyển đổi." },
-            { name: "Notes", type: "text", details: "Ghi chú thêm về quá trình chuyển đổi." }
-        ]
-    },
-    "ProductReviews": {
-        name: "Đánh Giá Sản Phẩm (ProductReviews)",
-        description: "Lưu trữ các đánh giá và xếp hạng của người dùng cho từng sản phẩm đã mua.",
-        attributes: [
-            { name: "ReviewID", type: "PK, increment", details: "Mã định danh duy nhất cho đánh giá." },
-            { name: "ProductID", type: "FK (Products.ProductID), NOT NULL", details: "Sản phẩm được đánh giá." },
-            { name: "UserID", type: "FK (Users.UserID), NOT NULL", details: "Người dùng đã thực hiện đánh giá." },
-            { name: "OrderItemID", type: "FK (OrderItems.OrderItemID), UNIQUE, NOT NULL", details: "Mục đơn hàng cụ thể mà sản phẩm được mua. Đảm bảo người dùng chỉ đánh giá sản phẩm đã mua và mỗi mục đơn hàng chỉ được đánh giá một lần." },
-            { name: "Rating", type: "NOT NULL", details: "Điểm đánh giá (1-5 sao)." },
-            { name: "Comment", type: "text", details: "Nội dung bình luận của đánh giá." },
-            { name: "ReviewDate", type: "default: `getdate()`", details: "Ngày và giờ đánh giá." },
-            { name: "Status", type: "default: 'pending', NOT NULL", details: "Trạng thái đánh giá ('pending', 'approved', 'rejected')." }
-        ]
-    },
-    "Sales": {
-        name: "Chương Trình Giảm Giá (Sales)",
-        description: "Quản lý các chương trình giảm giá tổng thể áp dụng cho sản phẩm trên sàn. Giờ đây liên kết trực tiếp với một danh mục cụ thể.",
-        attributes: [
-            { name: "SaleID", type: "PK, increment", details: "Mã định danh duy nhất cho chương trình giảm giá." },
-            { name: "Name", type: "NOT NULL", details: "Tên chương trình giảm giá (ví dụ: 'Black Friday Sale')." },
-            { name: "Description", type: "text", details: "Mô tả chi tiết chương trình." },
-            { name: "DiscountType", type: "NOT NULL", details: "Loại giảm giá ('percentage', 'fixed_amount')." },
-            { name: "DiscountValue", type: "decimal(18,2), NOT NULL", details: "Giá trị giảm giá (ví dụ: 0.10 cho 10%, 50000 cho 50.000 VNĐ)." },
-            { name: "StartDate", type: "NOT NULL", details: "Ngày bắt đầu chương trình." },
-            { name: "EndDate", type: "NOT NULL", details: "Ngày kết thúc chương trình." },
-            { name: "CategoryID", type: "FK (Categories.CategoryID), NULL", details: "Danh mục áp dụng giảm giá (NULL nếu áp dụng cho tất cả sản phẩm)." },
-            { name: "Status", type: "default: 'active', NOT NULL", details: "Trạng thái chương trình ('active', 'inactive', 'scheduled', 'ended')." },
-            { name: "CreatedAt", type: "default: `getdate()`", details: "Thời gian tạo bản ghi." }
-        ]
-    },
-    "Shipments": {
-        name: "Vận chuyển (Shipments)",
-        description: "Theo dõi thông tin chi tiết về từng lô hàng được giao từ đơn hàng đến người nhận.",
-        attributes: [
-            { name: "ShipmentID", type: "PK, increment", details: "Mã định danh duy nhất cho mỗi lô hàng." },
-            { name: "OrderID", type: "FK (Orders.OrderID), NOT NULL", details: "Đơn hàng được vận chuyển." },
-            { name: "DeliveryPartnerID", type: "FK (DeliveryPartners.PartnerID)", details: "Đối tác vận chuyển chịu trách nhiệm." },
-            { name: "TrackingNumber", type: "UNIQUE", details: "Mã theo dõi lô hàng (duy nhất)." },
-            { name: "ShippingDate", type: "datetime", details: "Ngày lô hàng được gửi đi." },
-            { name: "EstimatedDeliveryDate", type: "date", details: "Ngày giao hàng dự kiến." },
-            { name: "ActualDeliveryDate", type: "date", details: "Ngày giao hàng thực tế." },
-            { name: "Status", type: "NOT NULL", details: "Trạng thái vận chuyển ('pending_pickup', 'in_transit', 'out_for_delivery', 'delivered', 'failed_delivery', 'returned')." },
-            { name: "ShippingCost", type: "decimal(10,2)", details: "Chi phí vận chuyển." },
-            { name: "ShippingAddressID", type: "FK (Addresses.AddressID), NOT NULL", details: "Địa chỉ giao hàng cụ thể cho lô hàng này." }
-        ]
-    },
-    "Coupons": {
-        name: "Mã Giảm Giá (Coupons)",
-        description: "Quản lý các mã giảm giá cụ thể mà người dùng có thể áp dụng. Giờ đây liên kết trực tiếp với một danh mục cụ thể.",
-        attributes: [
-            { name: "CouponID", type: "PK, increment", details: "Mã định danh duy nhất cho mã giảm giá." },
-            { name: "Code", type: "UNIQUE, NOT NULL", details: "Mã coupon (ví dụ: 'FREESHIP2023')." },
-            { name: "Description", type: "text", details: "Mô tả mã giảm giá." },
-            { name: "DiscountType", type: "NOT NULL", details: "Loại giảm giá ('percentage', 'fixed_amount', 'free_shipping')." },
-            { name: "DiscountValue", type: "decimal(18,2)", details: "Giá trị giảm giá (nếu có, không áp dụng cho freeship)." },
-            { name: "StartDate", type: "NOT NULL", details: "Ngày bắt đầu hiệu lực." },
-            { name: "ExpirationDate", type: "NOT NULL", details: "Ngày hết hạn hiệu lực." },
-            { name: "IsFreeShipping", type: "boolean, default: false", details: "Có miễn phí vận chuyển hay không." },
-            { name: "QuantityAvailable", type: "int", details: "Số lượng mã coupon còn lại (NULL nếu không giới hạn)." },
-            { name: "UsageLimitPerCustomer", type: "int", details: "Số lần sử dụng tối đa cho mỗi khách hàng (NULL nếu không giới hạn)." },
-            { name: "CategoryID", type: "FK (Categories.CategoryID)", details: "Danh mục áp dụng coupon (NULL nếu áp dụng cho tất cả sản phẩm)." },
-            { name: "MinOrderAmount", type: "decimal(18,2)", details: "Số tiền đơn hàng tối thiểu để áp dụng coupon (NULL nếu không có)." },
-            { name: "MaxDiscountAmount", type: "decimal(18,2)", details: "Số tiền giảm giá tối đa (NULL nếu không có)." },
-            { name: "Status", type: "default: 'active', NOT NULL", details: "Trạng thái coupon ('active', 'inactive', 'expired')." },
-            { name: "CreatedAt", type: "default: `getdate()`", details: "Thời gian tạo bản ghi." }
-        ]
-    },
-    "Notifications": {
-        name: "Thông báo (Notifications)",
-        description: "Lưu trữ các thông báo gửi đến người dùng.",
-        attributes: [
-            { name: "NotificationID", type: "PK, increment", details: "Mã định danh duy nhất cho thông báo." },
-            { name: "UserID", type: "FK (Users.UserID), NOT NULL", details: "Người dùng nhận thông báo." },
-            { name: "Title", type: "NOT NULL", details: "Tiêu đề thông báo." },
-            { name: "Content", type: "text, NOT NULL", details: "Nội dung chi tiết thông báo." },
-            { name: "Status", type: "default: 'unread', NOT NULL", details: "Trạng thái thông báo ('unread', 'read')." },
-            { name: "CreatedAt", type: "default: `getdate()`", details: "Thời gian tạo thông báo." }
-        ]
-    },
-    "Admins": {
-        name: "Quản trị viên (Admins)",
-        description: "Mở rộng thông tin cho người dùng có vai trò là quản trị viên.",
-        attributes: [
-            { name: "AdminID", type: "PK, FK (Users.UserID)", details: "Mã định danh quản trị viên, liên kết với Users." },
-            { name: "Permissions", type: "text", details: "Quyền hạn cụ thể của quản trị viên (ví dụ: JSON hoặc text)." },
-            { name: "LastActionLog", type: "text", details: "Nhật ký hành động cuối cùng của quản trị viên." }
-        ]
-    }
-};
-
-const relationshipsData = [
-    { name: "Users - Roles", type: "N:1", from: "Users", to: "Roles", details: "Một người dùng thuộc về một vai trò duy nhất. `Users.RoleID` (FK) -> `Roles.RoleID` (PK)." },
-    { name: "Users - Sellers", type: "1:1 (hoặc 1:0..1)", from: "Users", to: "Sellers", details: "Một người dùng có thể là một người bán. `Sellers.SellerID` (PK, FK) -> `Users.UserID` (PK)." },
-    { name: "Users - Admins", type: "1:1 (hoặc 1:0..1)", from: "Users", to: "Admins", details: "Một người dùng có thể là một quản trị viên. `Admins.AdminID` (PK, FK) -> `Users.UserID` (PK)." },
-    { name: "Users - Addresses", type: "1:N", from: "Users", to: "Addresses", details: "Một người dùng có thể có nhiều địa chỉ. `Addresses.UserID` (FK) -> `Users.UserID` (PK)." },
-    { name: "Users - ShoppingCarts", type: "1:N", from: "Users", to: "ShoppingCarts", details: "Một người dùng có thể có nhiều giỏ hàng (nếu hệ thống hỗ trợ nhiều giỏ hàng hoặc lịch sử giỏ hàng). `ShoppingCarts.UserID` (FK) -> `Users.UserID` (PK)." },
-    { name: "Users - Wishlists", type: "1:N", from: "Users", to: "Wishlists", details: "Một người dùng có thể có nhiều mục trong danh sách yêu thích. `Wishlists.UserID` (FK) -> `Users.UserID` (PK)." },
-    { name: "Users - Orders", type: "1:N", from: "Users", to: "Orders", details: "Một người dùng (người mua) có thể đặt nhiều đơn hàng. `Orders.UserID` (FK) -> `Users.UserID` (PK)." },
-    { name: "Users - Payments", type: "1:N", from: "Users", to: "Payments", details: "Một người dùng có thể thực hiện nhiều giao dịch thanh toán. `Payments.UserID` (FK) -> `Users.UserID` (PK)." },
-    { name: "Users - ProductReviews", type: "1:N", from: "Users", to: "ProductReviews", details: "Một người dùng có thể viết nhiều đánh giá sản phẩm. `ProductReviews.UserID` (FK) -> `Users.UserID` (PK)." },
-    { name: "Users - ProductTransformations", type: "1:N", from: "Users", to: "ProductTransformations", details: "Một người dùng (admin/seller) có thể thực hiện nhiều giao dịch chuyển đổi sản phẩm. `ProductTransformations.TransformedByUserID` (FK) -> `Users.UserID` (PK)." },
-    { name: "Users - Notifications", type: "1:N", from: "Users", to: "Notifications", details: "Một người dùng có thể nhận nhiều thông báo. `Notifications.UserID` (FK) -> `Users.UserID` (PK)." },
-
-    { name: "Cities - Districts", type: "1:N", from: "Cities", to: "Districts", details: "Một thành phố có nhiều quận/huyện. `Districts.CityID` (FK) -> `Cities.CityID` (PK)." },
-    { name: "Cities - Addresses", type: "1:N", from: "Cities", to: "Addresses", details: "Một thành phố có thể có nhiều địa chỉ. `Addresses.CityID` (FK) -> `Cities.CityID` (PK)." },
-    { name: "Districts - Addresses", type: "1:N", from: "Districts", to: "Addresses", details: "Một quận/huyện có thể có nhiều địa chỉ. `Addresses.DistrictID` (FK) -> `Districts.DistrictID` (PK)." },
-
-    { name: "Categories - Products", type: "1:N", from: "Categories", to: "Products", details: "Một danh mục có thể chứa nhiều sản phẩm. `Products.CategoryID` (FK) -> `Categories.CategoryID` (PK)." },
-    { name: "Categories - Categories (Self-referencing)", type: "1:N", from: "Categories", to: "Categories", details: "Một danh mục cha có thể có nhiều danh mục con. `Categories.ParentCategoryID` (FK) -> `Categories.CategoryID` (PK)." },
-    { name: "Categories - Sales", type: "N:1", from: "Sales", to: "Categories", details: "Một chương trình giảm giá có thể áp dụng cho một danh mục cụ thể (hoặc NULL cho tất cả). `Sales.CategoryID` (FK) -> `Categories.CategoryID` (PK)." },
-    { name: "Categories - Coupons", type: "N:1", from: "Coupons", to: "Categories", details: "Một mã giảm giá có thể áp dụng cho một danh mục cụ thể (hoặc NULL cho tất cả). `Coupons.CategoryID` (FK) -> `Categories.CategoryID` (PK)." },
-
-
-    { name: "Sellers - Products", type: "1:N", from: "Sellers", to: "Products", details: "Một người bán có thể bán nhiều sản phẩm. `Products.SellerID` (FK) -> `Sellers.SellerID` (PK)." },
-    { name: "Sellers - OrderItems", type: "1:N", from: "Sellers", to: "OrderItems", details: "Một người bán có thể có sản phẩm trong nhiều mục đơn hàng. `OrderItems.SellerID` (FK) -> `Sellers.SellerID` (PK)." },
-
-    { name: "Products - ProductImages", type: "1:N", from: "Products", to: "ProductImages", details: "Một sản phẩm có thể có nhiều hình ảnh. `ProductImages.ProductID` (FK) -> `Products.ProductID` (PK)." },
-    { name: "Products - CartItems", type: "1:N", from: "Products", to: "CartItems", details: "Một sản phẩm có thể xuất hiện trong nhiều mục giỏ hàng. `CartItems.ProductID` (FK) -> `Products.ProductID` (PK)." },
-    { name: "Products - Wishlists", type: "1:N", from: "Products", to: "Wishlists", details: "Một sản phẩm có thể xuất hiện trong nhiều danh sách yêu thích. `Wishlists.ProductID` (FK) -> `Products.ProductID` (PK)." },
-    { name: "Products - OrderItems", type: "M:N (qua OrderItems)", from: "Products", to: "OrderItems", details: "Một sản phẩm có thể xuất hiện trong nhiều chi tiết đơn hàng. `OrderItems.ProductID` (FK) -> `Products.ProductID` (PK)." },
-    { name: "Products - ProductReviews", type: "1:N", from: "Products", to: "ProductReviews", details: "Một sản phẩm có thể nhận nhiều đánh giá. `ProductReviews.ProductID` (FK) -> `Products.ProductID` (PK)." },
-    { name: "Products - ProductTransformations (Source)", type: "1:N", from: "Products", to: "ProductTransformations", details: "Một sản phẩm gốc có thể là nguồn cho nhiều giao dịch chuyển đổi. `ProductTransformations.SourceProductID` (FK) -> `Products.ProductID` (PK)." },
-    { name: "Products - ProductTransformations (Derived)", type: "1:N", from: "Products", to: "ProductTransformations", details: "Một sản phẩm (được tái chế/chuyển đổi) có thể là kết quả của nhiều giao dịch chuyển đổi. `ProductTransformations.DerivedProductID` (FK) -> `Products.ProductID` (PK)." },
-
-    { name: "ShoppingCarts - CartItems", type: "1:N", from: "ShoppingCarts", to: "CartItems", details: "Một giỏ hàng có thể chứa nhiều mục. `CartItems.CartID` (FK) -> `ShoppingCarts.CartID` (PK)." },
-
-    { name: "Orders - OrderItems", type: "1:N", from: "Orders", to: "OrderItems", details: "Một đơn hàng có thể bao gồm nhiều mặt hàng. `OrderItems.OrderID` (FK) -> `Orders.OrderID` (PK)." },
-    { name: "Orders - Payments", type: "1:1", from: "Orders", to: "Payments", details: "Mỗi đơn hàng thường liên kết với một giao dịch thanh toán duy nhất. `Payments.OrderID` (FK, UNIQUE) -> `Orders.OrderID` (PK)." },
-    { name: "Orders - DeliveryPartners", type: "N:1", from: "Orders", to: "DeliveryPartners", details: "Một đơn hàng được giao bởi một đối tác vận chuyển. `Orders.DeliveryPartnerID` (FK) -> `DeliveryPartners.PartnerID` (PK)." },
-    { name: "Orders - Addresses (Shipping)", type: "N:1", from: "Orders", to: "Addresses", details: "Một đơn hàng có một địa chỉ giao hàng. `Orders.ShippingAddressID` (FK) -> `Addresses.AddressID` (PK)." },
-    { name: "Orders - Addresses (Billing)", type: "N:1", from: "Orders", to: "Addresses", details: "Một đơn hàng có một địa chỉ thanh toán. `Orders.BillingAddressID` (FK) -> `Addresses.AddressID` (PK)." },
-    { name: "Orders - PaymentMethods", type: "N:1", from: "Orders", to: "PaymentMethods", details: "Một đơn hàng sử dụng một phương thức thanh toán. `Orders.PaymentMethodID` (FK) -> `PaymentMethods.MethodID` (PK)." },
-
-    { name: "PaymentMethods - Payments", type: "1:N", from: "PaymentMethods", to: "Payments", details: "Một phương thức thanh toán có thể được sử dụng cho nhiều giao dịch. `Payments.MethodID` (FK) -> `PaymentMethods.MethodID` (PK)." },
-
-    { name: "OrderItems - ProductReviews", type: "1:1", from: "OrderItems", to: "ProductReviews", details: "Mỗi mục đơn hàng chỉ có thể có một đánh giá. `ProductReviews.OrderItemID` (FK, UNIQUE) -> `OrderItems.OrderItemID` (PK)." },
-
-    // New relationships for Shipments
-    { name: "Orders - Shipments", type: "1:N", from: "Orders", to: "Shipments", details: "Một đơn hàng có thể có nhiều lô hàng (nếu các sản phẩm được giao riêng lẻ hoặc từ nhiều kho). `Shipments.OrderID` (FK) -> `Orders.OrderID` (PK)." },
-    { name: "DeliveryPartners - Shipments", type: "1:N", from: "DeliveryPartners", to: "Shipments", details: "Một đối tác vận chuyển có thể xử lý nhiều lô hàng. `Shipments.DeliveryPartnerID` (FK) -> `DeliveryPartners.PartnerID` (PK)." },
-    { name: "Addresses - Shipments", type: "N:1", from: "Addresses", to: "Shipments", details: "Một lô hàng có một địa chỉ giao hàng cụ thể. `Shipments.ShippingAddressID` (FK) -> `Addresses.AddressID` (PK)." }
-];
-
-const constraintsData = [
-    {
-        name: "PRIMARY KEY (Khóa Chính)",
-        description: "Một cột hoặc một tập hợp các cột xác định duy nhất mỗi hàng trong một bảng. Khóa chính không được chứa giá trị NULL và phải là duy nhất.",
-        howItWorks: "Khi một cột được định nghĩa là khóa chính, DBMS tự động tạo một chỉ mục duy nhất trên cột đó để tăng tốc độ truy vấn và đảm bảo tính duy nhất. Mỗi bảng chỉ có thể có một khóa chính.",
-        examples: [
-            "`Users.UserID` PK: Mỗi người dùng có một mã định danh duy nhất.",
-            "`Products.ProductID` PK: Mỗi sản phẩm có một mã định danh duy nhất.",
-            "`Orders.OrderID` PK: Mỗi đơn hàng có một mã định danh duy nhất."
-        ]
-    },
-    {
-        name: "FOREIGN KEY (Khóa Ngoại)",
-        description: "Một cột hoặc tập hợp các cột trong một bảng (bảng con) tham chiếu đến khóa chính của một bảng khác (bảng cha). Khóa ngoại thiết lập mối liên kết giữa hai bảng và đảm bảo tính toàn vẹn tham chiếu.",
-        howItWorks: "Đảm bảo rằng mọi giá trị được chèn hoặc cập nhật vào cột khóa ngoại phải tồn tại trong cột khóa chính của bảng cha. Khi xóa/cập nhật bảng cha, DBMS sẽ kiểm tra các hàng liên quan trong bảng con và áp dụng quy tắc hành động (ví dụ: RESTRICT, CASCADE, SET NULL, SET DEFAULT).",
-        examples: [
-            "`Orders.UserID` FK REFERENCES `Users(UserID)`: Mỗi đơn hàng phải thuộc về một người dùng đã tồn tại.",
-            "`Products.CategoryID` FK REFERENCES `Categories(CategoryID)`: Mỗi sản phẩm phải thuộc về một danh mục đã tồn tại.",
-            "`OrderItems.ProductID` FK REFERENCES `Products(ProductID)`: Mỗi mục trong đơn hàng phải là một sản phẩm đã tồn tại."
-        ]
-    },
-    {
-        name: "NOT NULL",
-        description: "Ràng buộc này đảm bảo rằng một cột không thể chứa giá trị NULL (rỗng). Điều này có nghĩa là mỗi hàng phải có một giá trị cụ thể cho cột đó.",
-        howItWorks: "Nếu bạn cố gắng chèn một hàng mới hoặc cập nhật một hàng hiện có mà để trống (NULL) một cột có ràng buộc NOT NULL, thao tác sẽ bị từ chối.",
-        examples: [
-            "`Users.PhoneNumber` NOT NULL: Mỗi người dùng phải có số điện thoại.",
-            "`Products.Name` NOT NULL: Mỗi sản phẩm phải có tên.",
-            "`Orders.OrderDate` NOT NULL: Mỗi đơn hàng phải có ngày đặt hàng."
-        ]
-    },
-    {
-        name: "UNIQUE",
-        description: "Ràng buộc này đảm bảo rằng tất cả các giá trị trong một cột (hoặc tập hợp các cột) phải là duy nhất. Một bảng có thể có nhiều ràng buộc UNIQUE và cột UNIQUE có thể chứa giá trị NULL (thường chỉ một giá trị NULL duy nhất được phép, tùy DBMS).",
-        howItWorks: "Nếu bạn cố gắng chèn một giá trị đã tồn tại vào một cột có ràng buộc UNIQUE, thao tác sẽ bị từ chối. Khác với PRIMARY KEY, UNIQUE không nhất thiết phải là khóa chính và có thể cho phép NULL.",
-        examples: [
-            "`Users.Username` UNIQUE: Tên đăng nhập của mỗi người dùng phải là duy nhất.",
-            "`Categories.Name` UNIQUE: Tên mỗi danh mục sản phẩm phải là duy nhất.",
-            "`Coupons.Code` UNIQUE: Mã coupon phải là duy nhất."
-        ]
-    },
-    {
-        name: "CHECK",
-        description: "Ràng buộc CHECK được sử dụng để định nghĩa một điều kiện logic mà dữ liệu trong một cột (hoặc nhiều cột) phải thỏa mãn. Điều kiện này được đánh giá mỗi khi dữ liệu được chèn hoặc cập nhật.",
-        howItWorks: "Mỗi khi một hàng được chèn hoặc cập nhật, điều kiện trong CHECK sẽ được tự động kiểm tra. Nếu điều kiện trả về FALSE, thao tác sẽ bị từ chối.",
-        examples: [
-            "`Products.Price` CHECK (`Price` > 0): Đảm bảo giá sản phẩm luôn là một số dương.",
-            "`OrderItems.Quantity` CHECK (`Quantity` > 0): Đảm bảo số lượng sản phẩm trong đơn hàng luôn lớn hơn 0.",
-            "`Users.Status` CHECK (`Status` IN ('active', 'inactive', 'suspended')): Đảm bảo trạng thái người dùng chỉ thuộc một trong các giá trị hợp lệ."
-        ]
-    },
-    {
-        name: "DEFAULT",
-        description: "Ràng buộc DEFAULT được sử dụng để cung cấp một giá trị mặc định cho một cột nếu không có giá trị nào được chỉ định khi chèn một hàng mới.",
-        howItWorks: "Nếu một cột có ràng buộc DEFAULT bị bỏ qua trong câu lệnh INSERT, cơ sở dữ liệu sẽ tự động sử dụng giá trị mặc định đã định nghĩa cho cột đó.",
-        examples: [
-            "`Orders.Status` DEFAULT 'pending': Nếu không chỉ định, trạng thái đơn hàng mặc định là 'pending'.",
-            "`Users.RegistrationDate` DEFAULT GETDATE(): Ngày đăng ký mặc định là thời điểm hiện tại.",
-            "`Products.StockQuantity` DEFAULT 0: Số lượng tồn kho mặc định là 0 nếu không được cung cấp."
-        ]
-    }
-];
-
-const expirationRepurposingData = {
-    problem: {
-        title: "Bài toán: Quản lý Hạn sử dụng và Tái chế Sản phẩm",
-        description: "Trong một số ngành hàng như thực phẩm, dược phẩm, việc quản lý hạn sử dụng (HSD) của sản phẩm là rất quan trọng. Đồng thời, khả năng tái chế hoặc chuyển đổi sản phẩm gần hết hạn thành một dạng sản phẩm khác (ví dụ: cà rốt tươi thành nước ép cà rốt) có thể giúp giảm thiểu lãng phí và tối ưu hóa giá trị. Phần này sẽ thảo luận về cách mở rộng mô hình cơ sở dữ liệu để giải quyết các yêu cầu này dựa trên lược đồ bạn đã cung cấp."
-    },
-    expirationSolution: {
-        title: "Giải pháp cho Hạn sử dụng: Bảng `Products`",
-        description: "Theo lược đồ bạn cung cấp, thông tin hạn sử dụng (`ImportDate` và `ExpirationDate`) được lưu trữ trực tiếp trong bảng `Products`.",
-        table: {
-            name: "Products (Sản phẩm)",
-            attributes: [
-                { name: "ProductID", type: "PK, increment", details: "Mã định danh duy nhất cho sản phẩm." },
-                { name: "ImportDate", type: "date", details: "Ngày nhập sản phẩm vào kho." },
-                { name: "ExpirationDate", type: "date", details: "Ngày hết hạn của sản phẩm." },
-                { name: "IsRecyclable", type: "boolean, default: false", details: "Cờ chỉ định sản phẩm có thể tái chế/chuyển đổi thành sản phẩm khác hay không." }
-            ]
-        },
-        explanation: "Trong mô hình này, `ExpirationDate` được gán cho từng `ProductID`, tức là cho từng loại sản phẩm. Điều này phù hợp nếu tất cả các đơn vị của một loại sản phẩm cụ thể đều có cùng một hạn sử dụng. Thuộc tính `IsRecyclable` cũng được thêm vào bảng `Products` để dễ dàng xác định những sản phẩm có tiềm năng tái chế. Với lược đồ hiện tại, thông tin hạn sử dụng được quản lý trực tiếp trên sản phẩm, không cần bảng `Inventory_Lot` riêng biệt cho mục đích này."
-    },
-    repurposingSolution: {
-        title: "Giải pháp cho Tái chế/Chuyển đổi sản phẩm: Bảng `ProductTransformations`",
-        description: "Bảng này ghi lại quá trình chuyển đổi một sản phẩm gốc (có thể gần hết hạn) thành một sản phẩm mới (tái chế).",
-        table: {
-            name: "ProductTransformations (Chuyển Đổi Sản Phẩm)",
-            attributes: [
-                { name: "TransformationID", type: "PK, increment", details: "Mã định danh duy nhất cho mỗi giao dịch chuyển đổi." },
-                { name: "SourceProductID", type: "FK (Products.ProductID), NOT NULL", details: "Sản phẩm gốc được chuyển đổi (ví dụ: cà rốt tươi)." },
-                { name: "SourceImportDate", type: "date", details: "Ngày nhập của sản phẩm gốc (để tham chiếu lô cụ thể nếu cần)." },
-                { name: "SourceExpirationDate", type: "date", details: "Ngày hết hạn của sản phẩm gốc (để tham chiếu lô cụ thể nếu cần)." },
-                { name: "QuantityTransformed", type: "NOT NULL", details: "Số lượng sản phẩm gốc đã sử dụng trong quá trình chuyển đổi." },
-                { name: "DerivedProductID", type: "FK (Products.ProductID), NOT NULL", details: "Sản phẩm mới được tạo ra sau chuyển đổi (cũng là một Product trong bảng Products)." },
-                { name: "DerivedQuantityProduced", type: "NOT NULL", details: "Số lượng sản phẩm mới được tạo ra." },
-                { name: "TransformationDate", type: "default: `getdate()`", details: "Ngày và giờ thực hiện chuyển đổi." },
-                { name: "TransformedByUserID", type: "FK (Users.UserID)", details: "Người dùng (admin/seller) thực hiện chuyển đổi." },
-                { name: "Notes", type: "text", details: "Ghi chú thêm về quá trình chuyển đổi." }
-            ]
-        },
-        explanation: "Khi một sản phẩm (ví dụ: cà rốt) được chuyển đổi thành sản phẩm khác (nước ép), hệ thống sẽ ghi nhận giao dịch này vào bảng `ProductTransformations`. `SourceProductID` và `DerivedProductID` đều tham chiếu đến các bản ghi trong bảng `Products`. Điều này cho phép một sản phẩm gốc có thể tạo ra nhiều loại sản phẩm tái chế khác nhau (ví dụ: cà rốt có thể thành nước ép hoặc thành nguyên liệu súp). Sau khi chuyển đổi, số lượng tồn kho của `SourceProductID` sẽ giảm và của `DerivedProductID` sẽ tăng. Việc lưu trữ `SourceImportDate` và `SourceExpirationDate` trực tiếp trong bảng này giúp truy vết nguồn gốc của sản phẩm được chuyển đổi."
-    },
-    needForNewTables: {
-        title: "Sự cần thiết của bảng `ProductTransformations`",
-        explanation: "Bảng `ProductTransformations` là cần thiết để ghi lại <strong>sự kiện</strong> chuyển đổi sản phẩm. Nếu không có bảng này, việc theo dõi lịch sử tái chế, số lượng sản phẩm gốc đã dùng, và số lượng sản phẩm mới tạo ra sẽ rất khó khăn hoặc không thể. Nó giúp duy trì tính toàn vẹn dữ liệu và cung cấp khả năng truy xuất nguồn gốc cho các sản phẩm được tái chế, đồng thời hỗ trợ các báo cáo về hiệu quả quản lý tồn kho và giảm lãng phí. Trong khi đó, với lược đồ DBML hiện tại, bảng `Inventory_Lot` không còn cần thiết cho việc quản lý HSD vì các thuộc tính đó đã được chuyển trực tiếp vào bảng `Products`."
-    }
-};
-
-const sqlSchemaData = `
--- Table Roles
-CREATE TABLE Roles (
-    RoleID INT IDENTITY(1,1) PRIMARY KEY,
-    RoleName VARCHAR(50) UNIQUE NOT NULL
-);
-
--- Table Users
-CREATE TABLE Users (
-    UserID INT IDENTITY(1,1) PRIMARY KEY,
-    Username VARCHAR(50) UNIQUE NOT NULL,
-    PasswordHash VARCHAR(255) NOT NULL,
-    FirstName VARCHAR(50),
-    LastName VARCHAR(50),
-    Email VARCHAR(100) UNIQUE,
-    PhoneNumber VARCHAR(20) UNIQUE NOT NULL,
-    DateOfBirth DATE,
-    ProfilePictureUrl VARCHAR(255),
-    RoleID INT NOT NULL,
-    RegistrationDate DATETIME DEFAULT GETDATE(),
-    LastLoginDate DATETIME,
-    Status VARCHAR(20) DEFAULT 'active' NOT NULL,
-    CONSTRAINT CK_Users_Status CHECK (Status IN ('active', 'inactive', 'suspended')),
-    CONSTRAINT FK_Users_Roles FOREIGN KEY (RoleID) REFERENCES Roles(RoleID)
-);
-
--- Table Sellers
-CREATE TABLE Sellers (
-    SellerID INT PRIMARY KEY,
-    StoreName VARCHAR(255) NOT NULL,
-    StoreDescription TEXT,
-    BankAccountDetails VARCHAR(255),
-    BusinessLicenseNumber VARCHAR(50) UNIQUE,
-    SellerRating DECIMAL(2,1) DEFAULT 0,
-    JoinDate DATETIME DEFAULT GETDATE(),
-    IsVerified BIT DEFAULT 0,
-    CONSTRAINT CK_Sellers_Rating CHECK (SellerRating >= 0 AND SellerRating <= 5),
-    CONSTRAINT FK_Sellers_Users FOREIGN KEY (SellerID) REFERENCES Users(UserID)
-);
-
--- Table Cities
-CREATE TABLE Cities (
-    CityID INT IDENTITY(1,1) PRIMARY KEY,
-    CityName VARCHAR(100) UNIQUE NOT NULL
-);
-
--- Table Districts
-CREATE TABLE Districts (
-    DistrictID INT IDENTITY(1,1) PRIMARY KEY,
-    CityID INT NOT NULL,
-    DistrictName VARCHAR(100) NOT NULL,
-    CONSTRAINT UQ_Districts_CityID_DistrictName UNIQUE (CityID, DistrictName),
-    CONSTRAINT FK_Districts_Cities FOREIGN KEY (CityID) REFERENCES Cities(CityID)
-);
-
--- Table Addresses
-CREATE TABLE Addresses (
-    AddressID INT IDENTITY(1,1) PRIMARY KEY,
-    UserID INT NOT NULL,
-    StreetAddress VARCHAR(255) NOT NULL,
-    CityID INT NOT NULL,
-    DistrictID INT NOT NULL,
-    AddressType VARCHAR(20) DEFAULT 'shipping' NOT NULL,
-    IsDefault BIT DEFAULT 0,
-    CONSTRAINT CK_Addresses_Type CHECK (AddressType IN ('shipping', 'billing', 'home', 'work')),
-    CONSTRAINT FK_Addresses_Users FOREIGN KEY (UserID) REFERENCES Users(UserID),
-    CONSTRAINT FK_Addresses_Cities FOREIGN KEY (CityID) REFERENCES Cities(CityID),
-    CONSTRAINT FK_Addresses_Districts FOREIGN KEY (DistrictID) REFERENCES Districts(DistrictID)
-);
-
--- Table Categories
-CREATE TABLE Categories (
-    CategoryID INT IDENTITY(1,1) PRIMARY KEY,
-    Name VARCHAR(100) UNIQUE NOT NULL,
-    Description TEXT,
-    ParentCategoryID INT,
-    CONSTRAINT FK_Categories_ParentCategory FOREIGN KEY (ParentCategoryID) REFERENCES Categories(CategoryID)
-);
-
--- Table Products
-CREATE TABLE Products (
-    ProductID INT IDENTITY(1,1) PRIMARY KEY,
-    SellerID INT NOT NULL,
-    CategoryID INT NOT NULL,
-    Name VARCHAR(255) NOT NULL,
-    Description TEXT,
-    Price DECIMAL(18,2) NOT NULL,
-    StockQuantity INT DEFAULT 0,
-    Unit VARCHAR(20),
-    ImageUrl VARCHAR(255),
-    Status VARCHAR(20) DEFAULT 'available' NOT NULL,
-    IsRecyclable BIT DEFAULT 0,
-    ImportDate DATE,
-    ExpirationDate DATE,
-    CreatedAt DATETIME DEFAULT GETDATE(),
-    UpdatedAt DATETIME DEFAULT GETDATE(),
-    CONSTRAINT CK_Products_Price CHECK (Price >= 0),
-    CONSTRAINT CK_Products_StockQuantity CHECK (StockQuantity >= 0),
-    CONSTRAINT CK_Products_Status CHECK (Status IN ('available', 'out_of_stock', 'discontinued', 'hidden')),
-    CONSTRAINT FK_Products_Sellers FOREIGN KEY (SellerID) REFERENCES Sellers(SellerID),
-    CONSTRAINT FK_Products_Categories FOREIGN KEY (CategoryID) REFERENCES Categories(CategoryID)
-);
-
--- Table ProductImages
-CREATE TABLE ProductImages (
-    ImageID INT IDENTITY(1,1) PRIMARY KEY,
-    ProductID INT NOT NULL,
-    ImageUrl VARCHAR(255) NOT NULL,
-    CONSTRAINT FK_ProductImages_Products FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
-);
-
--- Table ShoppingCarts
-CREATE TABLE ShoppingCarts (
-    CartID INT IDENTITY(1,1) PRIMARY KEY,
-    UserID INT NOT NULL,
-    CreatedAt DATETIME DEFAULT GETDATE(),
-    UpdatedAt DATETIME,
-    CONSTRAINT FK_ShoppingCarts_Users FOREIGN KEY (UserID) REFERENCES Users(UserID)
-);
-
--- Table CartItems
-CREATE TABLE CartItems (
-    CartItemID INT IDENTITY(1,1) PRIMARY KEY,
-    CartID INT NOT NULL,
-    ProductID INT NOT NULL,
-    Quantity INT NOT NULL,
-    AddedAt DATETIME DEFAULT GETDATE(),
-    CONSTRAINT CK_CartItems_Quantity CHECK (Quantity > 0),
-    CONSTRAINT FK_CartItems_ShoppingCarts FOREIGN KEY (CartID) REFERENCES ShoppingCarts(CartID),
-    CONSTRAINT FK_CartItems_Products FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
-);
-
--- Table Wishlists
-CREATE TABLE Wishlists (
-    WishlistID INT IDENTITY(1,1) PRIMARY KEY,
-    UserID INT NOT NULL,
-    ProductID INT NOT NULL,
-    AddedAt DATETIME DEFAULT GETDATE(),
-    CONSTRAINT UQ_Wishlists_UserID_ProductID UNIQUE (UserID, ProductID),
-    CONSTRAINT FK_Wishlists_Users FOREIGN KEY (UserID) REFERENCES Users(UserID),
-    CONSTRAINT FK_Wishlists_Products FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
-);
-
--- Table DeliveryPartners
-CREATE TABLE DeliveryPartners (
-    PartnerID INT IDENTITY(1,1) PRIMARY KEY,
-    Name VARCHAR(100) UNIQUE NOT NULL,
-    ContactPerson VARCHAR(100),
-    PhoneNumber VARCHAR(20) UNIQUE,
-    Email VARCHAR(100) UNIQUE,
-    ServiceArea TEXT,
-    Rating DECIMAL(2,1),
-    CreatedAt DATETIME DEFAULT GETDATE(),
-    CONSTRAINT CK_DeliveryPartners_Rating CHECK (Rating >= 0 AND Rating <= 5)
-);
-
--- Table Orders
-CREATE TABLE Orders (
-    OrderID INT IDENTITY(1,1) PRIMARY KEY,
-    UserID INT NOT NULL,
-    OrderDate DATETIME DEFAULT GETDATE(),
-    TotalAmount DECIMAL(18,2) NOT NULL,
-    Status VARCHAR(20) DEFAULT 'pending' NOT NULL,
-    ShippingAddressID INT NOT NULL,
-    BillingAddressID INT NOT NULL,
-    DeliveryPartnerID INT,
-    DeliveryInstructions VARCHAR(255),
-    EstimatedDeliveryDate DATE,
-    ActualDeliveryDate DATE,
-    PaymentMethodID INT,
-    Notes TEXT,
-    CONSTRAINT CK_Orders_TotalAmount CHECK (TotalAmount >= 0),
-    CONSTRAINT CK_Orders_Status CHECK (Status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded')),
-    CONSTRAINT FK_Orders_Users FOREIGN KEY (UserID) REFERENCES Users(UserID),
-    CONSTRAINT FK_Orders_ShippingAddress FOREIGN KEY (ShippingAddressID) REFERENCES Addresses(AddressID),
-    CONSTRAINT FK_Orders_BillingAddress FOREIGN KEY (BillingAddressID) REFERENCES Addresses(AddressID),
-    CONSTRAINT FK_Orders_DeliveryPartners FOREIGN KEY (DeliveryPartnerID) REFERENCES DeliveryPartners(PartnerID),
-    CONSTRAINT FK_Orders_PaymentMethods FOREIGN KEY (PaymentMethodID) REFERENCES PaymentMethods(MethodID)
-);
-
--- Table OrderItems
-CREATE TABLE OrderItems (
-    OrderItemID INT IDENTITY(1,1) PRIMARY KEY,
-    OrderID INT NOT NULL,
-    ProductID INT NOT NULL,
-    Quantity INT NOT NULL,
-    PriceAtPurchase DECIMAL(18,2) NOT NULL,
-    SellerID INT NOT NULL,
-    CONSTRAINT CK_OrderItems_Quantity CHECK (Quantity > 0),
-    CONSTRAINT CK_OrderItems_PriceAtPurchase CHECK (PriceAtPurchase >= 0),
-    CONSTRAINT FK_OrderItems_Orders FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
-    CONSTRAINT FK_OrderItems_Products FOREIGN KEY (ProductID) REFERENCES Products(ProductID),
-    CONSTRAINT FK_OrderItems_Sellers FOREIGN KEY (SellerID) REFERENCES Sellers(SellerID)
-);
-
--- Table PaymentMethods
-CREATE TABLE PaymentMethods (
-    MethodID INT IDENTITY(1,1) PRIMARY KEY,
-    Name VARCHAR(50) UNIQUE NOT NULL,
-    Description TEXT,
-    IsActive BIT DEFAULT 1
-);
-
--- Table Payments
-CREATE TABLE Payments (
-    PaymentID INT IDENTITY(1,1) PRIMARY KEY,
-    OrderID INT UNIQUE NOT NULL,
-    MethodID INT NOT NULL,
-    Amount DECIMAL(18,2) NOT NULL,
-    PaymentDate DATETIME DEFAULT GETDATE(),
-    Status VARCHAR(20) DEFAULT 'pending' NOT NULL,
-    TransactionIDGateway VARCHAR(255) UNIQUE,
-    UserID INT NOT NULL,
-    CONSTRAINT CK_Payments_Amount CHECK (Amount >= 0),
-    CONSTRAINT CK_Payments_Status CHECK (Status IN ('pending', 'completed', 'failed', 'refunded')),
-    CONSTRAINT FK_Payments_Orders FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
-    CONSTRAINT FK_Payments_PaymentMethods FOREIGN KEY (MethodID) REFERENCES PaymentMethods(MethodID),
-    CONSTRAINT FK_Payments_Users FOREIGN KEY (UserID) REFERENCES Users(UserID)
-);
-
--- Table ProductTransformations
-CREATE TABLE ProductTransformations (
-    TransformationID INT IDENTITY(1,1) PRIMARY KEY,
-    SourceProductID INT NOT NULL,
-    SourceImportDate DATE,
-    SourceExpirationDate DATE,
-    QuantityTransformed INT NOT NULL,
-    DerivedProductID INT NOT NULL,
-    DerivedQuantityProduced INT NOT NULL,
-    TransformationDate DATETIME DEFAULT GETDATE(),
-    TransformedByUserID INT,
-    Notes TEXT,
-    CONSTRAINT CK_ProductTransformations_QuantityTransformed CHECK (QuantityTransformed > 0),
-    CONSTRAINT CK_ProductTransformations_DerivedQuantityProduced CHECK (DerivedQuantityProduced > 0),
-    CONSTRAINT FK_ProductTransformations_SourceProduct FOREIGN KEY (SourceProductID) REFERENCES Products(ProductID),
-    CONSTRAINT FK_ProductTransformations_DerivedProduct FOREIGN KEY (DerivedProductID) REFERENCES Products(ProductID),
-    CONSTRAINT FK_ProductTransformations_User FOREIGN KEY (TransformedByUserID) REFERENCES Users(UserID)
-);
-
--- Table ProductReviews
-CREATE TABLE ProductReviews (
-    ReviewID INT IDENTITY(1,1) PRIMARY KEY,
-    ProductID INT NOT NULL,
-    UserID INT NOT NULL,
-    OrderItemID INT UNIQUE NOT NULL,
-    Rating INT NOT NULL,
-    Comment TEXT,
-    ReviewDate DATETIME DEFAULT GETDATE(),
-    Status VARCHAR(20) DEFAULT 'pending' NOT NULL,
-    CONSTRAINT CK_ProductReviews_Rating CHECK (Rating >= 1 AND Rating <= 5),
-    CONSTRAINT CK_ProductReviews_Status CHECK (Status IN ('pending', 'approved', 'rejected')),
-    CONSTRAINT FK_ProductReviews_Products FOREIGN KEY (ProductID) REFERENCES Products(ProductID),
-    CONSTRAINT FK_ProductReviews_Users FOREIGN KEY (UserID) REFERENCES Users(UserID),
-    CONSTRAINT FK_ProductReviews_OrderItems FOREIGN KEY (OrderItemID) REFERENCES OrderItems(OrderItemID)
-);
-
--- Table Sales
-CREATE TABLE Sales (
-    SaleID INT IDENTITY(1,1) PRIMARY KEY,
-    Name VARCHAR(100) NOT NULL,
-    Description TEXT,
-    DiscountType VARCHAR(20) NOT NULL,
-    DiscountValue DECIMAL(18,2) NOT NULL,
-    StartDate DATETIME NOT NULL,
-    EndDate DATETIME NOT NULL,
-    CategoryID INT,
-    Status VARCHAR(20) DEFAULT 'active' NOT NULL,
-    CreatedAt DATETIME DEFAULT GETDATE(),
-    CONSTRAINT CK_Sales_DiscountType CHECK (DiscountType IN ('percentage', 'fixed_amount')),
-    CONSTRAINT CK_Sales_DiscountValue CHECK (DiscountValue >= 0),
-    CONSTRAINT CK_Sales_Status CHECK (Status IN ('active', 'inactive', 'scheduled', 'ended')),
-    CONSTRAINT FK_Sales_Categories FOREIGN KEY (CategoryID) REFERENCES Categories(CategoryID)
-);
-
--- Table Shipments
-CREATE TABLE Shipments (
-    ShipmentID INT IDENTITY(1,1) PRIMARY KEY,
-    OrderID INT NOT NULL,
-    DeliveryPartnerID INT,
-    TrackingNumber VARCHAR(100) UNIQUE,
-    ShippingDate DATETIME,
-    EstimatedDeliveryDate DATE,
-    ActualDeliveryDate DATE,
-    Status VARCHAR(50) NOT NULL,
-    ShippingCost DECIMAL(10,2),
-    ShippingAddressID INT NOT NULL,
-    CONSTRAINT CK_Shipments_Status CHECK (Status IN ('pending_pickup', 'in_transit', 'out_for_delivery', 'delivered', 'failed_delivery', 'returned')),
-    CONSTRAINT FK_Shipments_Orders FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
-    CONSTRAINT FK_Shipments_DeliveryPartners FOREIGN KEY (DeliveryPartnerID) REFERENCES DeliveryPartners(PartnerID),
-    CONSTRAINT FK_Shipments_ShippingAddress FOREIGN KEY (ShippingAddressID) REFERENCES Addresses(AddressID)
-);
-
--- Table Coupons
-CREATE TABLE Coupons (
-    CouponID INT IDENTITY(1,1) PRIMARY KEY,
-    Code VARCHAR(50) UNIQUE NOT NULL,
-    Description TEXT,
-    DiscountType VARCHAR(20) NOT NULL,
-    DiscountValue DECIMAL(18,2),
-    StartDate DATETIME NOT NULL,
-    ExpirationDate DATETIME NOT NULL,
-    IsFreeShipping BIT DEFAULT 0,
-    QuantityAvailable INT,
-    UsageLimitPerCustomer INT,
-    CategoryID INT,
-    MinOrderAmount DECIMAL(18,2),
-    MaxDiscountAmount DECIMAL(18,2),
-    Status VARCHAR(20) DEFAULT 'active' NOT NULL,
-    CreatedAt DATETIME DEFAULT GETDATE(),
-    CONSTRAINT CK_Coupons_DiscountType CHECK (DiscountType IN ('percentage', 'fixed_amount', 'free_shipping')),
-    CONSTRAINT CK_Coupons_DiscountValue CHECK (DiscountValue IS NULL OR DiscountValue >= 0),
-    CONSTRAINT CK_Coupons_QuantityAvailable CHECK (QuantityAvailable IS NULL OR QuantityAvailable >= 0),
-    CONSTRAINT CK_Coupons_UsageLimitPerCustomer CHECK (UsageLimitPerCustomer IS NULL OR UsageLimitPerCustomer >= 0),
-    CONSTRAINT CK_Coupons_MinOrderAmount CHECK (MinOrderAmount IS NULL OR MinOrderAmount >= 0),
-    CONSTRAINT CK_Coupons_MaxDiscountAmount CHECK (MaxDiscountAmount IS NULL OR MaxDiscountAmount >= 0),
-    CONSTRAINT CK_Coupons_Status CHECK (Status IN ('active', 'inactive', 'expired')),
-    CONSTRAINT FK_Coupons_Categories FOREIGN KEY (CategoryID) REFERENCES Categories(CategoryID)
-);
-
--- Table Notifications
-CREATE TABLE Notifications (
-    NotificationID INT IDENTITY(1,1) PRIMARY KEY,
-    UserID INT NOT NULL,
-    Title VARCHAR(255) NOT NULL,
-    Content TEXT NOT NULL,
-    Status VARCHAR(20) DEFAULT 'unread' NOT NULL,
-    CreatedAt DATETIME DEFAULT GETDATE(),
-    CONSTRAINT CK_Notifications_Status CHECK (Status IN ('unread', 'read')),
-    CONSTRAINT FK_Notifications_Users FOREIGN KEY (UserID) REFERENCES Users(UserID)
-);
-
--- Table Admins
-CREATE TABLE Admins (
-    AdminID INT PRIMARY KEY,
-    Permissions TEXT,
-    LastActionLog TEXT,
-    CONSTRAINT FK_Admins_Users FOREIGN KEY (AdminID) REFERENCES Users(UserID)
-);
-`;
-
-document.addEventListener('DOMContentLoaded', function () {
-    const tabs = document.querySelectorAll('.tab-button');
-    const tabContents = document.querySelectorAll('.tab-content');
-    const entityList = document.getElementById('entityList');
-    const entityDetail = document.getElementById('entityDetail');
-    const relationshipList = document.getElementById('relationshipList');
-    const relationshipDetail = document.getElementById('relationshipDetail');
-    const constraintsList = document.getElementById('constraintsList');
-    const mobileMenuButton = document.getElementById('mobileMenuButton');
-    const mainNav = document.getElementById('mainNav');
-    const sqlCodeBlock = document.getElementById('sqlCodeBlock');
-    const copySqlButton = document.getElementById('copySqlButton');
-
-    mobileMenuButton.addEventListener('click', () => {
-        mainNav.classList.toggle('hidden');
-        mainNav.classList.toggle('md:flex');
-    });
-    
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active', 'text-sky-600', 'border-sky-600'));
-            tabs.forEach(t => t.classList.add('text-stone-100'));
-            tab.classList.add('active', 'text-sky-600', 'border-sky-600');
-            tab.classList.remove('text-stone-100');
-
-            tabContents.forEach(content => content.classList.remove('active'));
-            document.getElementById(tab.dataset.tab).classList.add('active');
-
-            if (window.innerWidth < 768 && !mainNav.classList.contains('hidden')) {
-                 mainNav.classList.add('hidden');
-            }
-        });
-    });
-    const initialActiveTab = document.querySelector('.tab-button[data-tab="entities"]');
-    if (initialActiveTab) {
-        initialActiveTab.classList.add('active', 'text-sky-600', 'border-sky-600');
-        initialActiveTab.classList.remove('text-stone-100');
-        document.getElementById('entities').classList.add('active');
-    }
-
-    function populateEntityList() {
-        entityList.innerHTML = '';
-        Object.keys(entitiesData).forEach(key => {
-            const listItem = document.createElement('li');
-            listItem.textContent = entitiesData[key].name;
-            listItem.className = 'entity-list-item p-2 hover:bg-emerald-50 cursor-pointer rounded transition-colors duration-150';
-            listItem.dataset.entityKey = key;
-            listItem.addEventListener('click', () => {
-                document.querySelectorAll('.entity-list-item').forEach(item => item.classList.remove('active'));
-                listItem.classList.add('active');
-                displayEntityDetails(key);
-            });
-            entityList.appendChild(listItem);
-        });
-    }
-
-    function displayEntityDetails(key) {
-        const entity = entitiesData[key];
-        if (!entity) {
-            entityDetail.innerHTML = '<p class="text-stone-500 italic">Không tìm thấy thông tin thực thể.</p>';
-            return;
-        }
-        let attributesHtml = entity.attributes.map(attr => `
-            <tr class="hover:bg-stone-50">
-                <td class="py-2 px-3 border-b border-stone-200 font-medium text-stone-700">${attr.name}</td>
-                <td class="py-2 px-3 border-b border-stone-200 text-sm text-sky-600">${attr.type}</td>
-                <td class="py-2 px-3 border-b border-stone-200 text-sm text-stone-600">${attr.details}</td>
-            </tr>
-        `).join('');
-
-        entityDetail.innerHTML = `
-            <h3 class="text-xl font-semibold text-emerald-700 mb-2">${entity.name}</h3>
-            <p class="text-sm text-stone-600 mb-4">${entity.description}</p>
-            <h4 class="text-md font-semibold text-emerald-600 mt-4 mb-2">Thuộc tính:</h4>
-            <div class="overflow-x-auto shadow rounded-md">
-                <table class="min-w-full bg-white border border-stone-200">
-                    <thead class="bg-stone-100">
-                        <tr>
-                            <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Tên Thuộc Tính</th>
-                            <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Loại (PK/FK/Ràng buộc)</th>
-                            <th class="py-2 px-3 border-b border-stone-200 text-left text-xs font-semibold text-stone-600 uppercase tracking-wider">Mô Tả</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-stone-200">
-                        ${attributesHtml}
-                    </tbody>
-                </table>
-            </div>
-        `;
-    }
-
-    function populateRelationshipList() {
-        relationshipList.innerHTML = '';
-        relationshipsData.forEach((rel, index) => {
-            const listItem = document.createElement('li');
-            listItem.textContent = rel.name;
-            listItem.className = 'relationship-list-item p-2 hover:bg-sky-50 cursor-pointer rounded transition-colors duration-150';
-            listItem.dataset.relIndex = index;
-            listItem.addEventListener('click', () => {
-                document.querySelectorAll('.relationship-list-item').forEach(item => item.classList.remove('active'));
-                listItem.classList.add('active');
-                displayRelationshipDetails(index);
-            });
-            relationshipList.appendChild(listItem);
-        });
-    }
-
-    function displayRelationshipDetails(index) {
-        const rel = relationshipsData[index];
-        if (!rel) {
-            relationshipDetail.innerHTML = '<p class="text-stone-500 italic">Không tìm thấy thông tin mối quan hệ.</p>';
-            return;
-        }
-        relationshipDetail.innerHTML = `
-            <h3 class="text-xl font-semibold text-sky-700 mb-2">${rel.name}</h3>
-            <p class="text-sm text-stone-600 mb-1"><strong class="text-stone-700">Loại:</strong> ${rel.type}</p>
-            <p class="text-sm text-stone-600 mb-1"><strong class="text-stone-700">Từ Thực thể:</strong> ${rel.from}</p>
-            <p class="text-sm text-stone-600 mb-3"><strong class="text-stone-700">Tới Thực thể:</strong> ${rel.to}</p>
-            <p class="text-sm text-stone-600 leading-relaxed">${rel.details}</p>
-        `;
-    }
-    
-    function populateConstraints() {
-        constraintsList.innerHTML = '';
-        constraintsData.forEach(constraint => {
-            const constraintDiv = document.createElement('div');
-            constraintDiv.className = 'p-5 border border-blue-200 rounded-lg bg-blue-50 shadow';
-            let examplesHtml = constraint.examples.map(ex => `<li class="text-sm text-stone-700 bg-white p-2 rounded border border-blue-100 shadow-sm">${ex}</li>`).join('');
-            constraintDiv.innerHTML = `
-                <h3 class="text-xl font-semibold text-blue-700 mb-2">${constraint.name}</h3>
-                <p class="text-sm text-stone-700 mb-3 leading-relaxed">${constraint.description}</p>
-                <h4 class="text-md font-semibold text-blue-600 mb-2">Cách hoạt động:</h4>
-                <p class="text-sm text-stone-700 mb-4 leading-relaxed">${constraint.howItWorks}</p>
-                <h4 class="text-md font-semibold text-blue-600 mb-2">Ví dụ:</h4>
-                <ul class="list-none space-y-2">
-                    ${examplesHtml}
+            <section id="conclusion" class="tab-content">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-4">7. Kết Luận và Các Cải Tiến Tương Lai (Mục 10 Báo Cáo)</h2>
+                <p class="mb-4 text-slate-700 leading-relaxed">Thiết kế cơ sở dữ liệu này cung cấp một nền tảng mạnh mẽ, có khả năng mở rộng và an toàn. Việc tích hợp RBAC và quản lý tồn kho nông sản chuyên biệt giải quyết các yêu cầu cốt lõi của hệ thống thương mại điện tử hiện đại, đặc biệt trong lĩnh vực nông sản.</p>
+                <h3 class="text-xl font-semibold text-sky-600 mb-3">Các Cải Tiến Tương Lai Tiềm Năng:</h3>
+                <ul class="list-disc pl-5 space-y-2 text-slate-600">
+                    <li><strong>Kiểm soát Truy cập Dựa trên Thuộc tính (ABAC):</strong> Cho phép ủy quyền chi tiết hơn dựa trên thuộc tính của người dùng, tài nguyên và môi trường, tạo ra các chính sách động hơn.</li>
+                    <li><strong>Ủy quyền Vai trò:</strong> Cho phép vai trò ủy quyền một phần quyền hạn cho người dùng khác trong thời gian giới hạn.</li>
+                    <li><strong>Phân tích Nâng cao:</strong> Tận dụng dữ liệu lô hàng để phân tích dự đoán về năng suất, tỷ lệ hư hỏng, và định giá.</li>
+                    <li><strong>Tích hợp Blockchain:</strong> Tăng cường tính minh bạch và bất biến của hồ sơ lô hàng và chuỗi cung ứng.</li>
                 </ul>
-            `;
-            constraintsList.appendChild(constraintDiv);
+            </section>
+        </main>
+
+        <footer class="mt-12 pt-8 border-t border-slate-300 text-center">
+            <p class="text-sm text-slate-500">&copy; <span id="currentYear"></span> Khám Phá Thiết Kế DB Ecommerce. Dựa trên báo cáo được cung cấp.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        const tabs = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(item => {
+                    item.classList.remove('active-tab', 'bg-sky-600', 'text-white');
+                    item.classList.add('hover:bg-sky-100');
+                });
+                tab.classList.add('active-tab', 'bg-sky-600', 'text-white');
+                tab.classList.remove('hover:bg-sky-100');
+                
+                const target = tab.getAttribute('data-tab');
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === target) {
+                        content.classList.add('active');
+                    }
+                });
+            });
         });
-    }
 
-    function populateExpirationRepurposing() {
-        const data = expirationRepurposingData;
-        document.getElementById('problem-title').textContent = data.problem.title;
-        document.getElementById('problem-description').textContent = data.problem.description;
-
-        document.getElementById('expiration-solution-title').textContent = data.expirationSolution.title;
-        document.getElementById('expiration-solution-description').textContent = data.expirationSolution.description;
-        document.getElementById('products-hsd-table-name').textContent = data.expirationSolution.table.name;
-        const productsHsdAttributesBody = document.getElementById('products-hsd-attributes');
-        productsHsdAttributesBody.innerHTML = data.expirationSolution.table.attributes.map(attr => `
-            <tr class="hover:bg-stone-50">
-                <td class="py-2 px-3 border-b border-stone-200 font-medium text-stone-700">${attr.name}</td>
-                <td class="py-2 px-3 border-b border-stone-200 text-sm text-sky-600">${attr.type}</td>
-                <td class="py-2 px-3 border-b border-stone-200 text-sm text-stone-600">${attr.details}</td>
-            </tr>
-        `).join('');
-        document.getElementById('expiration-solution-explanation').innerHTML = data.expirationSolution.explanation;
-
-        document.getElementById('repurposing-solution-title').textContent = data.repurposingSolution.title;
-        document.getElementById('repurposing-solution-description').textContent = data.repurposingSolution.description;
-        document.getElementById('product-transformation-table-name').textContent = data.repurposingSolution.table.name;
-        const productTransformationAttributesBody = document.getElementById('product-transformation-attributes');
-        productTransformationAttributesBody.innerHTML = data.repurposingSolution.table.attributes.map(attr => `
-            <tr class="hover:bg-stone-50">
-                <td class="py-2 px-3 border-b border-stone-200 font-medium text-stone-700">${attr.name}</td>
-                <td class="py-2 px-3 border-b border-stone-200 text-sm text-sky-600">${attr.type}</td>
-                <td class="py-2 px-3 border-b border-stone-200 text-sm text-stone-600">${attr.details}</td>
-            </tr>
-        `).join('');
-        document.getElementById('repurposing-solution-explanation').innerHTML = data.repurposingSolution.explanation;
+        const accordions = document.querySelectorAll('.accordion-button');
+        accordions.forEach(accordion => {
+            accordion.addEventListener('click', () => {
+                accordion.classList.toggle('active');
+                const content = accordion.nextElementSibling;
+                if (content.style.display === "block") {
+                    content.style.display = "none";
+                } else {
+                    content.style.display = "block";
+                }
+                // Close other accordions in the same group if needed
+            });
+        });
         
-        document.getElementById('need-for-new-tables-title').textContent = data.needForNewTables.title;
-        document.getElementById('need-for-new-tables-explanation').innerHTML = data.needForNewTables.explanation;
-    }
+        // Data for tables (simplified from report)
+        const dbSchema = {
+            core: [
+                { name: 'Users (Người dùng)', fields: ['user_id (PK)', 'username', 'email', 'password_hash', 'status', 'registered_at'] , description: "Lưu trữ thông tin chung về tất cả người dùng hệ thống."},
+                { name: 'Addresses (Địa chỉ)', fields: ['address_id (PK)', 'user_id (FK)', 'street', 'city', 'address_type'], description: "Lưu trữ nhiều địa chỉ cho người dùng."},
+                { name: 'Products (Sản phẩm)', fields: ['product_id (PK)', 'name', 'description', 'price', 'sku', 'is_active'], description: "Thông tin chung về tất cả sản phẩm."},
+                { name: 'Categories (Danh mục)', fields: ['category_id (PK)', 'name', 'parent_category_id (FK)'], description: "Tổ chức sản phẩm thành các nhóm hợp lý."},
+                { name: 'ProductCategories', fields: ['product_id (FK)', 'category_id (FK)'], description: "Bảng nối Products và Categories (N-N)."},
+                { name: 'Orders (Đơn hàng)', fields: ['order_id (PK)', 'user_id (FK)', 'order_date', 'total_amount', 'status'], description: "Lưu trữ chi tiết về các đơn hàng."},
+                { name: 'OrderItems (Mặt hàng ĐH)', fields: ['order_item_id (PK)', 'order_id (FK)', 'product_id (FK)', 'quantity', 'unit_price'], description: "Chi tiết các sản phẩm trong một đơn hàng."},
+                { name: 'Payments (Thanh toán)', fields: ['payment_id (PK)', 'order_id (FK)', 'amount', 'payment_method', 'status'], description: "Ghi lại các giao dịch thanh toán."},
+                { name: 'Carts (Giỏ hàng)', fields: ['cart_id (PK)', 'user_id (FK)', 'created_at', 'is_active'], description: "Đại diện cho giỏ hàng của người dùng."},
+                { name: 'CartItems (Mặt hàng GH)', fields: ['cart_item_id (PK)', 'cart_id (FK)', 'product_id (FK)', 'quantity'], description: "Chi tiết sản phẩm trong giỏ hàng."}
+            ],
+            rbac: [
+                { name: 'Roles (Vai trò)', fields: ['role_id (PK)', 'title', 'slug', 'description', 'is_active'], description: "Định nghĩa các vai trò khác nhau trong hệ thống."},
+                { name: 'Permissions (Quyền hạn)', fields: ['permission_id (PK)', 'title', 'slug', 'module', 'is_active'], description: "Định nghĩa các hành động chi tiết có thể thực hiện."},
+                { name: 'UserRoles', fields: ['user_id (FK)', 'role_id (FK)', 'assigned_at'], description: "Ánh xạ người dùng với vai trò (N-N)."},
+                { name: 'RolePermissions', fields: ['role_id (FK)', 'permission_id (FK)', 'assigned_at'], description: "Ánh xạ vai trò với quyền hạn (N-N)."}
+            ],
+            farm: [
+                { name: 'Farms (Nông trại)', fields: ['farm_id (PK)', 'user_id (FK)', 'name', 'location', 'status'], description: "Thông tin về các nông trại cung cấp sản phẩm."},
+                { name: 'FarmProducts (SP Nông trại)', fields: ['farm_product_id (PK)', 'farm_id (FK)', 'product_id (FK)', 'farm_specific_sku'], description: "Liên kết Products chung với Farms cụ thể."},
+                { name: 'Batches (Lô hàng)', fields: ['batch_id (PK)', 'farm_product_id (FK)', 'batch_number', 'expiry_date', 'current_quantity'], description: "Theo dõi lô sản phẩm dễ hỏng và ngày hết hạn."},
+                { name: 'Inventory (Tồn kho)', fields: ['inventory_id (PK)', 'farm_product_id (FK)', 'batch_id (FK)', 'quantity_on_hand'], description: "Theo dõi mức tồn kho hiện tại, liên kết với lô hàng."}
+            ]
+        };
 
-    function populateProductReviews() {
-        const attributesBody = document.getElementById('product-reviews-attributes');
-        attributesBody.innerHTML = entitiesData.ProductReviews.attributes.map(attr => `
-            <tr class="hover:bg-stone-50">
-                <td class="py-2 px-3 border-b border-stone-200 font-medium text-stone-700">${attr.name}</td>
-                <td class="py-2 px-3 border-b border-stone-200 text-sm text-sky-600">${attr.type}</td>
-                <td class="py-2 px-3 border-b border-stone-200 text-sm text-stone-600">${attr.details}</td>
-            </tr>
-        `).join('');
-    }
-
-    function populatePromotionsCoupons() {
-        const salesAttributesBody = document.getElementById('sales-attributes');
-        salesAttributesBody.innerHTML = entitiesData.Sales.attributes.map(attr => `
-            <tr class="hover:bg-stone-50">
-                <td class="py-2 px-3 border-b border-stone-200 font-medium text-stone-700">${attr.name}</td>
-                <td class="py-2 px-3 border-b border-stone-200 text-sm text-sky-600">${attr.type}</td>
-                <td class="py-2 px-3 border-b border-stone-200 text-sm text-stone-600">${attr.details}</td>
-            </tr>
-        `).join('');
-
-        const couponsAttributesBody = document.getElementById('coupons-attributes');
-        couponsAttributesBody.innerHTML = entitiesData.Coupons.attributes.map(attr => `
-            <tr class="hover:bg-stone-50">
-                <td class="py-2 px-3 border-b border-stone-200 font-medium text-stone-700">${attr.name}</td>
-                <td class="py-2 px-3 border-b border-stone-200 text-sm text-sky-600">${attr.type}</td>
-                <td class="py-2 px-3 border-b border-stone-200 text-sm text-stone-600">${attr.details}</td>
-            </tr>
-        `).join('');
-    }
-
-    function populateSqlSchema() {
-        sqlCodeBlock.textContent = sqlSchemaData;
-    }
-
-    copySqlButton.addEventListener('click', () => {
-        const textToCopy = sqlCodeBlock.textContent;
-        navigator.clipboard.writeText(textToCopy).then(() => {
-            const originalText = copySqlButton.textContent;
-            copySqlButton.textContent = 'Đã sao chép!';
-            setTimeout(() => {
-                copySqlButton.textContent = originalText;
-            }, 2000);
-        }).catch(err => {
-            console.error('Failed to copy text: ', err);
-            // Fallback for older browsers or if writeText fails
-            const textArea = document.createElement('textarea');
-            textArea.value = textToCopy;
-            textArea.style.position = 'fixed'; // Avoid scrolling to bottom
-            textArea.style.left = '-9999px'; // Hide from view
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                const originalText = copySqlButton.textContent;
-                copySqlButton.textContent = 'Đã sao chép!';
-                setTimeout(() => {
-                    copySqlButton.textContent = originalText;
-                }, 2000);
-            } catch (e) {
-                console.error('Fallback: Could not copy text', e);
+        const rolesData = {
+            customer: { 
+                description: "Người dùng cuối tiêu chuẩn duyệt sản phẩm, mua hàng và xem lịch sử đơn hàng của chính họ.",
+                permissions: ['sản_phẩm:xem_tất_cả', 'giỏ_hàng:quản_lý_của_riêng', 'đơn_hàng:đặt_của_riêng', 'đơn_hàng:xem_của_riêng', 'người_dùng:quản_lý_hồ_sơ_của_riêng', 'thanh_toán:thực_hiện_của_riêng', 'đánh_giá:quản_lý_của_riêng']
+            },
+            seller: {
+                description: "Người dùng liệt kê và bán sản phẩm nông nghiệp. Họ quản lý hàng tồn kho, đơn hàng và doanh số của riêng họ.",
+                permissions: ['sản_phẩm:quản_lý_của_riêng', 'tồn_kho:quản_lý_của_riêng', 'đơn_hàng:xem_đơn_hàng_người_bán', 'đơn_hàng:cập_nhật_trạng_thái_người_bán', 'báo_cáo_doanh_số:xem_của_riêng', 'nông_trại:quản_lý_chi_tiết_của_riêng (nếu có)']
+            },
+            admin: {
+                description: "Giám sát toàn bộ hệ thống, quản lý người dùng và vai trò, cấu hình toàn cầu.",
+                permissions: ['người_dùng:quản_lý_tất_cả', 'vai_trò:quản_lý_tất_cả', 'quyền_hạn:quản_lý_tất_cả', 'sản_phẩm:quản_lý_tất_cả', 'đơn_hàng:quản_lý_tất_cả', 'danh_mục:quản_lý_tất_cả', 'thanh_toán:xử_lý_hoàn_tiền_tất_cả', 'cài_đặt_thương_mại_điện_tử:chỉnh_sửa_tất_cả', 'báo_cáo:xem_tất_cả', 'nhật_ký_kiểm_toán:xem_tất_cả']
+            },
+            staff: {
+                description: "Truy cập bảng quản trị cụ thể (ví dụ: hỗ trợ khách hàng, quản lý nội dung, xử lý đơn hàng) với quyền hạn chế.",
+                permissions: ['đơn_hàng:xem_tất_cả (hạn chế)', 'đơn_hàng:cập_nhật_trạng_thái (thực hiện)', 'hỗ_trợ_khách_hàng:quản_lý_yêu_cầu', 'nội_dung:quản_lý_cơ_bản', 'mã_giảm_giá:quản_lý']
+            },
+            farm_role: { // Changed key to avoid conflict with 'farm' in dbSchema
+                description: "Đại diện nông trại, quản lý sản phẩm, lô hàng và tồn kho của nông trại mình.",
+                permissions: ['sản_phẩm_nông_trại:quản_lý_của_riêng', 'lô_hàng:quản_lý_của_riêng', 'tồn_kho:quản_lý_tồn_kho_nông_trại', 'báo_cáo_nông_trại:xem_của_riêng', 'hồ_sơ_nông_trại:quản_lý_của_riêng']
             }
-            document.body.removeChild(textArea);
-        });
-    });
+        };
+        
+        function createTableCard(table) {
+            const card = document.createElement('div');
+            card.className = 'p-4 border border-slate-300 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-white';
+            card.innerHTML = `<h4 class="font-semibold text-sky-700 mb-2">${table.name}</h4>
+                              <p class="text-xs text-slate-500 mb-2 italic">${table.description}</p>
+                              <button class="text-xs text-sky-600 hover:underline focus:outline-none toggle-details-btn">Xem/Ẩn Trường</button>
+                              <ul class="text-sm text-slate-600 mt-2 space-y-1 hidden">
+                                  ${table.fields.map(field => `<li>${field.replace('(PK)', '<strong class="text-amber-600">(PK)</strong>').replace('(FK)', '<strong class="text-emerald-600">(FK)</strong>')}</li>`).join('')}
+                              </ul>`;
+            card.querySelector('.toggle-details-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                const ul = card.querySelector('ul');
+                ul.classList.toggle('hidden');
+                e.target.textContent = ul.classList.contains('hidden') ? 'Xem Trường' : 'Ẩn Trường';
+            });
+            return card;
+        }
 
-    populateEntityList();
-    populateRelationshipList();
-    populateConstraints();
-    populateExpirationRepurposing();
-    populateProductReviews();
-    populatePromotionsCoupons();
-    populateSqlSchema();
-});
-</script>
+        const coreEntitiesContainer = document.getElementById('coreEntitiesContainer');
+        dbSchema.core.forEach(table => coreEntitiesContainer.appendChild(createTableCard(table)));
+
+        const rbacTablesContainer = document.getElementById('rbacTablesContainer');
+        dbSchema.rbac.forEach(table => rbacTablesContainer.appendChild(createTableCard(table)));
+        
+        const farmTablesContainer = document.getElementById('farmTablesContainer');
+        dbSchema.farm.forEach(table => farmTablesContainer.appendChild(createTableCard(table)));
+
+        const roleSelector = document.getElementById('roleSelector');
+        const roleDetailsDiv = document.getElementById('roleDetails');
+
+        Object.keys(rolesData).forEach(roleKey => {
+            const option = document.createElement('option');
+            option.value = roleKey;
+            let roleName = roleKey.charAt(0).toUpperCase() + roleKey.slice(1).replace('_role',' (Nông trại)');
+            if(roleKey === "customer") roleName = "Khách Hàng";
+            if(roleKey === "seller") roleName = "Người Bán";
+            if(roleKey === "admin") roleName = "Quản Trị Viên";
+            if(roleKey === "staff") roleName = "Nhân Viên";
+            option.textContent = roleName;
+            roleSelector.appendChild(option);
+        });
+
+        roleSelector.addEventListener('change', (event) => {
+            const selectedRoleKey = event.target.value;
+            if (selectedRoleKey && rolesData[selectedRoleKey]) {
+                const role = rolesData[selectedRoleKey];
+                roleDetailsDiv.innerHTML = `
+                    <h4 class="font-semibold text-lg text-sky-700 mb-2">${roleSelector.options[roleSelector.selectedIndex].text}</h4>
+                    <p class="text-slate-700 mb-3"><strong>Mô tả:</strong> ${role.description}</p>
+                    <strong class="text-slate-700">Quyền hạn:</strong>
+                    <ul class="list-disc pl-5 mt-1 space-y-1 text-slate-600">
+                        ${role.permissions.map(perm => `<li>${perm}</li>`).join('')}
+                    </ul>`;
+            } else {
+                roleDetailsDiv.innerHTML = '<p class="text-slate-500">Thông tin chi tiết về vai trò sẽ được hiển thị ở đây.</p>';
+            }
+        });
+
+        // Chart.js Initializations
+        // Sample data for charts
+        const roleDistributionData = {
+            labels: ['Khách Hàng', 'Người Bán', 'Nông Trại', 'Nhân Viên', 'Quản Trị Viên'],
+            datasets: [{
+                label: 'Phân Bố Vai Trò',
+                data: [65, 15, 10, 7, 3], // Sample percentages
+                backgroundColor: ['#7dd3fc', '#38bdf8', '#0ea5e9', '#0284c7', '#0369a1'],
+                hoverOffset: 4
+            }]
+        };
+        new Chart(document.getElementById('roleDistributionChart'), {
+            type: 'pie',
+            data: roleDistributionData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } }
+            }
+        });
+
+        const permissionsPerModuleData = {
+            labels: ['QL Sản Phẩm', 'QL Đơn Hàng', 'QL Người Dùng', 'QL Kho Hàng', 'Báo Cáo', 'Hệ Thống'],
+            datasets: [{
+                label: 'Số Lượng Quyền Hạn',
+                data: [8, 12, 10, 7, 5, 15], // Sample counts
+                backgroundColor: '#38bdf8',
+                borderColor: '#0284c7',
+                borderWidth: 1
+            }]
+        };
+        new Chart(document.getElementById('permissionsPerModuleChart'), {
+            type: 'bar',
+            data: permissionsPerModuleData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Interactive ERD
+        const erdContainer = document.getElementById('interactiveErd');
+        const relationshipInfo = document.getElementById('relationshipInfo');
+        const allTables = [...dbSchema.core, ...dbSchema.rbac, ...dbSchema.farm];
+        
+        const tableMap = new Map();
+        allTables.forEach(table => {
+            const tableDiv = document.createElement('div');
+            tableDiv.className = 'table-block';
+            tableDiv.dataset.tableName = table.name;
+            tableDiv.innerHTML = `<h4>${table.name}</h4>`;
+            
+            const fieldsList = document.createElement('ul');
+            fieldsList.className = 'hidden'; // Initially hidden
+            table.fields.slice(0, 3).forEach(field => { // Show first 3 fields as preview
+                 const li = document.createElement('li');
+                 li.innerHTML = field.replace('(PK)', '<strong class="text-amber-600">(PK)</strong>').replace('(FK)', '<strong class="text-emerald-600">(FK)</strong>');
+                 fieldsList.appendChild(li);
+            });
+            if (table.fields.length > 3) {
+                const li = document.createElement('li');
+                li.textContent = '...';
+                fieldsList.appendChild(li);
+            }
+            tableDiv.appendChild(fieldsList);
+            
+            tableDiv.addEventListener('mouseenter', () => fieldsList.classList.remove('hidden'));
+            tableDiv.addEventListener('mouseleave', () => fieldsList.classList.add('hidden'));
+
+            tableDiv.addEventListener('click', () => {
+                const selectedTableName = tableDiv.dataset.tableName;
+                erdContainer.querySelectorAll('.table-block').forEach(block => block.classList.remove('highlighted', 'opacity-50'));
+                
+                tableDiv.classList.add('highlighted');
+                
+                let relatedTables = new Set();
+                let relationsText = `<strong>${selectedTableName}</strong> có các mối quan hệ chính với: `;
+                let foundRelations = false;
+
+                // Define some key relationships (simplified)
+                if (selectedTableName === 'Users (Người dùng)') {
+                    relatedTables.add('Addresses (Địa chỉ)'); relatedTables.add('Orders (Đơn hàng)'); relatedTables.add('Carts (Giỏ hàng)'); relatedTables.add('UserRoles'); relatedTables.add('Farms (Nông trại)');
+                } else if (selectedTableName === 'Products (Sản phẩm)') {
+                    relatedTables.add('ProductCategories'); relatedTables.add('OrderItems (Mặt hàng ĐH)'); relatedTables.add('CartItems (Mặt hàng GH)'); relatedTables.add('FarmProducts (SP Nông trại)');
+                } else if (selectedTableName === 'Orders (Đơn hàng)') {
+                    relatedTables.add('Users (Người dùng)'); relatedTables.add('OrderItems (Mặt hàng ĐH)'); relatedTables.add('Payments (Thanh toán)'); relatedTables.add('Addresses (Địa chỉ)');
+                } else if (selectedTableName === 'Roles (Vai trò)') {
+                    relatedTables.add('UserRoles'); relatedTables.add('RolePermissions');
+                } else if (selectedTableName === 'Permissions (Quyền hạn)') {
+                    relatedTables.add('RolePermissions');
+                } else if (selectedTableName === 'Farms (Nông trại)') {
+                    relatedTables.add('Users (Người dùng)'); relatedTables.add('FarmProducts (SP Nông trại)');
+                } else if (selectedTableName === 'FarmProducts (SP Nông trại)') {
+                    relatedTables.add('Products (Sản phẩm)'); relatedTables.add('Farms (Nông trại)'); relatedTables.add('Batches (Lô hàng)'); relatedTables.add('Inventory (Tồn kho)');
+                } else if (selectedTableName === 'Batches (Lô hàng)') {
+                    relatedTables.add('FarmProducts (SP Nông trại)'); relatedTables.add('Inventory (Tồn kho)'); relatedTables.add('OrderItems (Mặt hàng ĐH)'); // For fulfilled_batch_id
+                }
+
+
+                erdContainer.querySelectorAll('.table-block').forEach(block => {
+                    if (block.dataset.tableName !== selectedTableName) {
+                        if (relatedTables.has(block.dataset.tableName)) {
+                            block.classList.add('highlighted');
+                            relationsText += `${block.dataset.tableName}, `;
+                            foundRelations = true;
+                        } else {
+                            block.classList.add('opacity-50');
+                        }
+                    }
+                });
+                relationshipInfo.innerHTML = foundRelations ? relationsText.slice(0, -2) + '.' : `<strong>${selectedTableName}</strong> không có mối quan hệ trực tiếp nào được làm nổi bật trong sơ đồ đơn giản này hoặc là bảng trung tâm.`;
+
+            });
+            tableMap.set(table.name, tableDiv);
+            erdContainer.appendChild(tableDiv);
+        });
+
+
+    </script>
 </body>
 </html>
