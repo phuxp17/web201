@@ -3,129 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khám Phá Thiết Kế DB Ecommerce</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Visualization & Content Choices:
-        - Introduction: Text summaries. Goal: Inform. Method: HTML text blocks.
-        - Core E-commerce Entities (Sec 2.1, 4): Interactive HTML lists/tables for Users, Products, Orders, etc. Goal: Organize/Inform. Method: HTML + JS toggle for details. Interaction: Click to expand.
-        - RBAC Concepts (Sec 3, 5): Text summaries, interactive lists for Roles, Permissions. Goal: Inform/Organize. Method: HTML + JS. Interaction: Click to see role details/permissions.
-        - RBAC Roles (Sec 6): Detailed views for Customer, Seller, Admin, Staff, Farm roles with their permissions. Goal: Compare/Inform. Method: HTML + JS. Interaction: Select role to view details.
-        - RBAC Charts (Conceptual):
-            - Role Distribution: Goal: Inform. Viz: Pie Chart (Chart.js). Interaction: Hover for details. Data: Sample. Justification: Visual overview of user types.
-            - Permissions per Module: Goal: Inform. Viz: Bar Chart (Chart.js). Interaction: Hover for details. Data: Sample based on report. Justification: Illustrate permission granularity.
-        - Farm Produce Management (Sec 7): Text summaries, interactive HTML lists for Farms, FarmProducts, Batches, Inventory. Visual flow representation (HTML/CSS). Goal: Inform/Organize. Method: HTML + JS. Interaction: Click to expand table details.
-        - Integrated Schema (Sec 8): Simplified interactive representation of key table relationships using HTML/CSS. Goal: Relationships. Method: HTML + JS click to highlight. Interaction: Click table to see related tables.
-        - Best Practices & Conclusion (Sec 9, 10): Text summaries. Goal: Inform. Method: HTML text blocks.
-        - NO SVG graphics used. NO Mermaid JS used. All diagrams/flows via HTML/CSS/Tailwind. Charts via Chart.js. -->
+    <title>QR Code free</title>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .table-diagram-container {
+        body {
+            font-family: Arial, sans-serif;
+            background: #f8fafc;
+            color: #334155;
             display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            align-items: flex-start;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
         }
-        .table-block {
-            border: 1px solid #e2e8f0; /* slate-200 */
-            border-radius: 0.375rem; /* rounded-md */
-            padding: 1rem;
-            background-color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            min-width: 150px;
-        }
-        .table-block:hover, .table-block.highlighted {
-            border-color: #0284c7; /* sky-600 */
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-        .table-block h4 {
-            font-weight: 600;
-            color: #1e293b; /* slate-800 */
-        }
-        .table-block ul {
-            list-style-type: none;
-            padding-left: 0;
-            font-size: 0.875rem; /* text-sm */
-            color: #475569; /* slate-600 */
-        }
-        .relationship-lines {
-            position: relative;
-            width: 100%;
-            min-height: 50px; /* Adjust as needed */
-        }
-        .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 500px; /* Tailwind max-w-lg */
-            margin-left: auto;
-            margin-right: auto;
-            height: 300px; /* Base height */
-            max-height: 350px;
-        }
-        @media (min-width: 768px) { /* md breakpoint */
-            .chart-container {
-                height: 350px;
-                max-height: 400px;
-            }
-        }
-        .details-section {
-            background-color: #f8fafc; /* slate-50 */
-            border: 1px solid #e2e8f0; /* slate-200 */
-            border-radius: 0.375rem; /* rounded-md */
-            padding: 1rem;
-            margin-top: 0.5rem;
-        }
-        .accordion-button {
-            background-color: #f1f5f9; /* slate-100 */
-            color: #1e293b; /* slate-800 */
-            cursor: pointer;
-            padding: 0.75rem 1rem;
-            width: 100%;
-            text-align: left;
-            border: none;
-            border-radius: 0.375rem; /* rounded-md */
-            outline: none;
-            transition: background-color 0.3s ease;
-            font-weight: 500;
-        }
-        .accordion-button:hover {
-            background-color: #e2e8f0; /* slate-200 */
-        }
-        .accordion-content {
-            padding: 0.75rem;
-            background-color: white;
-            border: 1px solid #e2e8f0; /* slate-200 */
-            border-top: none;
-            border-radius: 0 0 0.375rem 0.375rem; /* rounded-b-md */
-            display: none;
-        }
-        .accordion-content.active {
-            display: block;
-        }
-        .flow-step {
-            background-color: #e0f2fe; /* sky-100 */
-            border: 1px dashed #7dd3fc; /* sky-300 */
-            padding: 0.75rem;
-            border-radius: 0.375rem; /* rounded-md */
+
+        .container {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             text-align: center;
+            max-width: 300px;
+            width: 100%;
         }
-        .flow-arrow {
-            font-size: 1.5rem; /* text-2xl */
-            color: #38bdf8; /* sky-400 */
-            margin: 0 0.5rem;
-            align-self: center;
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        input:focus {
+            border-color: #3b82f6;
+        }
+
+        button {
+            background-color: #3b82f6;
+            color: white;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #2563eb;
+        }
+
+        img {
+            display: block;
+            margin: 15px auto 0;
+            border-radius: 8px;
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 p-4 md:p-8">
+<body>
     <div class="container">
         <input id="qr" placeholder="Enter url">
         <img alt="QR Code" id="qrimg">
         <button 
-            onclick="qrimg.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data='+qr.value">
+            onclick="qrimg.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data='+encodeURIComponent(qr.value)">
             Generate
         </button>
     </div>
