@@ -89,668 +89,475 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LexiPath - The Forum Center</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vũ Trụ Di Động (Fix)</title>
+    
+    <!-- Tải thư viện -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
     <style>
         body {
-            font-family: 'Be Vietnam Pro', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            background-color: #050510;
+            font-family: sans-serif;
+            touch-action: none; /* Chặn kéo trang */
         }
-        .card {
-            transform-style: preserve-3d;
-            transition: transform 0.6s;
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
         }
-        .card.is-flipped {
-            transform: rotateY(180deg);
+
+        /* Modal thông điệp */
+        #message-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(15, 25, 50, 0.95);
+            border: 1px solid rgba(100, 200, 255, 0.5);
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            color: #fff;
+            box-shadow: 0 0 40px rgba(0, 200, 255, 0.3);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 100;
+            width: 80%;
+            max-width: 320px;
         }
-        .card-face {
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
+
+        #message-modal.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
         }
-        .card-face-back {
-            transform: rotateY(180deg);
+
+        #message-text {
+            font-size: 1.4rem;
+            margin: 15px 0;
+            color: #a1c4fd;
+            font-weight: bold;
         }
-        .btn-answer.correct {
-            background-color: #22c55e; /* green-500 */
-            border-color: #16a34a; /* green-600 */
+
+        /* Thông báo trạng thái/Lỗi */
+        #status-bar {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            color: #00ff88;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            border: 1px solid #00ff88;
+            z-index: 50;
+            white-space: nowrap;
+            max-width: 90%;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .btn-answer.incorrect {
-            background-color: #ef4444; /* red-500 */
-            border-color: #dc2626; /* red-600 */
-        }
-        .progress-bar-inner {
-            transition: width 0.3s ease-in-out;
-        }
-        .tts-button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
+
+        /* Nút Camera */
+        #cam-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
             justify-content: center;
-            color: #3b82f6; /* blue-500 */
-            transition: color 0.2s, transform 0.2s;
-        }
-        .tts-button:hover {
-            color: #1d4ed8; /* blue-700 */
-            transform: scale(1.1);
-        }
-        .tts-button svg {
-            width: 1.5rem;
-            height: 1.5rem;
-        }
-        .mode-card {
+            align-items: center;
+            font-size: 20px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 51;
+            border: 1px solid rgba(255,255,255,0.5);
         }
-        .mode-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+        /* Hướng dẫn dưới đáy */
+        .hint {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+
+        /* Video ẩn nhưng không tắt display để tránh lỗi iOS */
+        .video-input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            top: 0;
+            left: 0;
+            pointer-events: none;
         }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen">
+<body>
 
-    <!-- Header -->
-    <header class="bg-white shadow-md">
-        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-            <h1 class="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-teal-400">LexiPath - The Forum Center</h1>
-            <button id="home-button" class="hidden text-blue-500 hover:text-blue-700">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                </svg>
-            </button>
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main id="app" class="container mx-auto p-4 flex-grow">
-
-        <!-- Home Screen -->
-        <div id="home-screen">
-            <div class="text-center mb-8">
-                <h2 class="text-2xl font-semibold mb-2">Chào mừng bạn đến với LexiPath!</h2>
-                <p class="text-slate-600">Chọn một hoạt động bên dưới để bắt đầu hành trình chinh phục từ vựng.</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div data-mode="flashcards" class="mode-card bg-white p-6 rounded-lg shadow-lg">
-                    <h3 class="text-xl font-bold text-blue-600 mb-2">Học với thẻ ghi nhớ</h3>
-                    <p class="text-slate-600">Lật thẻ để học từ mới, định nghĩa và ví dụ. Lưu ý: Mỗi thẻ chỉ được học 1 lần. Bạn có thể tải báo cáo khi học xong 10 từ để xem lại các thẻ đã học trước đó.</p>
-                </div>
-                <div data-mode="multiple-choice" class="mode-card bg-white p-6 rounded-lg shadow-lg">
-                    <h3 class="text-xl font-bold text-green-600 mb-2">Bài tập trắc nghiệm</h3>
-                    <p class="text-slate-600">Kiểm tra kiến thức bằng cách chọn đúng nghĩa của từ.</p>
-                </div>
-                <div data-mode="fill-in-blank" class="mode-card bg-white p-6 rounded-lg shadow-lg">
-                    <h3 class="text-xl font-bold text-purple-600 mb-2">Điền vào chỗ trống</h3>
-                    <p class="text-slate-600">Hoàn thành câu với từ vựng đúng để luyện tập.</p>
-                </div>
-                 <div data-mode="verb-forms" class="mode-card bg-white p-6 rounded-lg shadow-lg">
-                    <h3 class="text-xl font-bold text-orange-600 mb-2">Chia động từ</h3>
-                    <p class="text-slate-600">Thử thách điền dạng V2 và V3 của các động từ.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Session Screen -->
-        <div id="session-screen" class="hidden">
-            <!-- Progress Bar -->
-            <div class="mb-4">
-                <div class="flex justify-between mb-1">
-                    <span class="text-base font-medium text-blue-700">Tiến độ</span>
-                    <span id="progress-text" class="text-sm font-medium text-blue-700">0 / 10</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2.5">
-                    <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
-                </div>
-            </div>
-
-            <!-- Content Area -->
-            <div id="session-content" class="min-h-[350px]"></div>
-
-            <!-- Feedback Area -->
-            <div id="feedback-area" class="mt-4 min-h-[50px] text-center"></div>
-            
-            <!-- AI Generated Examples Area -->
-            <div id="ai-examples-area" class="mt-4 max-w-2xl mx-auto"></div>
-
-            <!-- Controls -->
-            <div class="mt-6 flex justify-center">
-                <button id="next-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">Tiếp theo</button>
-            </div>
-        </div>
-        
-        <!-- Loading Screen -->
-        <div id="loading-screen" class="hidden text-center py-20">
-             <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mx-auto"></div>
-             <p id="loading-text" class="mt-4 text-lg font-semibold text-slate-700">AI đang chuẩn bị bài học...</p>
-             <p class="text-slate-500">Vui lòng chờ trong giây lát.</p>
-        </div>
-
-        <!-- Results Screen -->
-        <div id="results-screen" class="hidden text-center">
-            <h2 class="text-3xl font-bold mb-4 text-green-500">Hoàn thành!</h2>
-            <p class="text-xl mb-6">Điểm của bạn: <span id="score" class="font-bold"></span></p>
-            <div id="review-area" class="mb-8 text-left max-w-2xl mx-auto"></div>
-            <div class="flex justify-center gap-4">
-                <button id="retry-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">Làm lại</button>
-                <button id="download-report-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">Tải báo cáo (.txt)</button>
-            </div>
-        </div>
-    </main>
-
-    <!-- Modal for Study Mode Selection -->
-    <div id="mode-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center hidden z-50 p-4">
-        <div class="bg-white p-8 rounded-2xl shadow-xl text-center w-full max-w-md relative">
-            <button id="modal-btn-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-            <h3 class="text-2xl font-bold mb-6 text-slate-800">Chọn chế độ học</h3>
-            <div class="flex flex-col sm:flex-row justify-center gap-4">
-                <button id="modal-btn-normal" class="w-full sm:w-auto text-lg bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">Học bình thường</button>
-                <button id="modal-btn-ai" class="w-full sm:w-auto text-lg bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">✨ Học với AI</button>
-            </div>
-        </div>
+    <div id="status-bar">Đang tải vũ trụ...</div>
+    <div id="cam-btn" onclick="toggleMode()">📷</div>
+    
+    <div class="hint">
+        ☝️ Dùng ngón trỏ (Camera) hoặc Chạm tay (Cảm ứng) để chọn sao
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-white mt-8">
-        <div class="container mx-auto px-4 py-4 text-center text-slate-500">
-            <p>&copy; 2025 LexiPath - The Forum Center. All rights reserved.</p>
-        </div>
-    </footer>
+    <video class="video-input" playsinline muted autoplay></video>
+    <canvas id="sky"></canvas>
 
-    <!-- Audio player for TTS -->
-    <audio id="tts-audio" class="hidden"></audio>
+    <div id="message-modal">
+        <h3 style="margin:0; color:#4facfe;">THÔNG ĐIỆP</h3>
+        <p id="message-text">...</p>
+        <div style="font-size:0.8rem; color:#888">(Chạm ra ngoài hoặc nắm tay để đóng)</div>
+    </div>
 
     <script>
-        const initialVocabulary = [
-            // Verbs (V1, V2, V3)
-            { word: 'go', type: 'verb', v1: 'go', v2: 'went', v3: 'gone', definition: 'đi', english_definition: 'to move from one place to another', example: 'They go to the beach every summer.' },
-            { word: 'see', type: 'verb', v1: 'see', v2: 'saw', v3: 'seen', definition: 'nhìn, thấy', english_definition: 'to notice or become aware of something by using your eyes', example: 'I saw a movie last night.' },
-            { word: 'do', type: 'verb', v1: 'do', v2: 'did', v3: 'done', definition: 'làm', english_definition: 'to perform an action or activity', example: 'What have you done?' },
-            { word: 'make', type: 'verb', v1: 'make', v2: 'made', v3: 'made', definition: 'làm, chế tạo', english_definition: 'to create or produce something by working', example: 'She made a cake for his birthday.' },
-            { word: 'get', type: 'verb', v1: 'get', v2: 'got', v3: 'gotten', definition: 'nhận, có được', english_definition: 'to obtain, buy, or earn something', example: 'He has gotten a new job.' },
-            // Nouns
-            { word: 'house', type: 'noun', definition: 'ngôi nhà', english_definition: 'a building in which a family lives', example: 'My house is small but cozy.' },
-            { word: 'car', type: 'noun', definition: 'xe hơi', english_definition: 'a road vehicle with an engine and four wheels', example: 'He bought a new car.' },
-            // Adjectives
-            { word: 'happy', type: 'adjective', definition: 'hạnh phúc', english_definition: 'feeling or showing pleasure or contentment', example: 'The children are very happy.' },
-            { word: 'beautiful', type: 'adjective', definition: 'xinh đẹp', english_definition: 'pleasing the senses or mind aesthetically', example: 'What a beautiful painting!' },
-            // Adverbs
-            { word: 'quickly', type: 'adverb', definition: 'nhanh chóng', english_definition: 'at a fast speed; rapidly', example: 'He finished his work quickly.' },
+        const canvas = document.getElementById('sky');
+        const ctx = canvas.getContext('2d');
+        const modal = document.getElementById('message-modal');
+        const msgText = document.getElementById('message-text');
+        const statusBar = document.getElementById('status-bar');
+        const videoElement = document.querySelector('.video-input');
+
+        let width, height;
+        let stars = [];
+        
+        // Trạng thái điều khiển
+        let controlState = { 
+            x: -100, y: -100, 
+            active: false, // Có đang tương tác không
+            mode: 'CAMERA', // 'CAMERA' hoặc 'TOUCH'
+            rotationSpeed: 0.0005 
+        };
+        
+        let globalRotation = 0;
+        let hoveredStarIndex = -1;
+        let camera = null;
+        let isFrontCamera = true;
+        let hands = null;
+
+        const messages = [
+            "Bạn là một ngôi sao sáng!", "Hạnh phúc ở ngay đây.", 
+            "Hãy tin vào điều kỳ diệu.", "Mọi chuyện sẽ ổn thôi.",
+            "Vũ trụ yêu thương bạn.", "Cười lên nào!",
+            "Thành công đang đến gần."
         ];
 
-        const app = {
-            // --- STATE ---
-            vocabulary: [],
-            currentSessionWords: [],
-            currentWordIndex: 0,
-            score: 0,
-            sessionType: '',
-            selectedMode: '',
-            sessionLength: 10,
-            reviewedWords: [],
-            isSpeaking: false,
-
-            // --- UI ELEMENTS ---
-            ui: {
-                homeScreen: document.getElementById('home-screen'),
-                sessionScreen: document.getElementById('session-screen'),
-                resultsScreen: document.getElementById('results-screen'),
-                loadingScreen: document.getElementById('loading-screen'),
-                loadingText: document.getElementById('loading-text'),
-                sessionContent: document.getElementById('session-content'),
-                feedbackArea: document.getElementById('feedback-area'),
-                aiExamplesArea: document.getElementById('ai-examples-area'),
-                nextButton: document.getElementById('next-button'),
-                homeButton: document.getElementById('home-button'),
-                progressBar: document.getElementById('progress-bar'),
-                progressText: document.getElementById('progress-text'),
-                scoreDisplay: document.getElementById('score'),
-                reviewArea: document.getElementById('review-area'),
-                ttsAudio: document.getElementById('tts-audio'),
-                modeModal: document.getElementById('mode-modal'),
-                modalBtnNormal: document.getElementById('modal-btn-normal'),
-                modalBtnAi: document.getElementById('modal-btn-ai'),
-                modalBtnClose: document.getElementById('modal-btn-close'),
-                retryBtn: document.getElementById('retry-btn'),
-                downloadReportBtn: document.getElementById('download-report-btn'),
-            },
-
-            // --- INITIALIZATION ---
-            init() {
-                this.vocabulary = JSON.parse(JSON.stringify(initialVocabulary));
-                this.ui.nextButton.addEventListener('click', () => this.nextStep());
-                this.ui.homeButton.addEventListener('click', () => this.reset());
-                this.ui.retryBtn.addEventListener('click', () => this.reset());
-                this.ui.downloadReportBtn.addEventListener('click', () => this.downloadReport());
-
-                document.querySelectorAll('.mode-card').forEach(card => {
-                    card.addEventListener('click', (e) => {
-                        this.openModeModal(e.currentTarget.dataset.mode);
-                    });
-                });
-
-                this.ui.modalBtnClose.addEventListener('click', () => this.closeModeModal());
-                this.ui.modalBtnNormal.addEventListener('click', () => {
-                    this.closeModeModal();
-                    this.startSession(this.selectedMode, 'normal');
-                });
-                this.ui.modalBtnAi.addEventListener('click', () => {
-                    this.closeModeModal();
-                    this.startSession(this.selectedMode, 'ai');
-                });
-            },
-
-            // --- MODAL MANAGEMENT ---
-            openModeModal(mode) {
-                this.selectedMode = mode;
-                this.ui.modeModal.classList.remove('hidden');
-            },
-
-            closeModeModal() {
-                this.ui.modeModal.classList.add('hidden');
-            },
-
-            // --- SESSION MANAGEMENT ---
-            async startSession(type, studyMode = 'normal') {
-                this.sessionType = type;
-                this.currentWordIndex = 0;
-                this.score = 0;
-                this.reviewedWords = [];
-                
-                this.ui.homeScreen.classList.add('hidden');
-                this.ui.homeButton.classList.remove('hidden');
-
-                if (studyMode === 'ai') {
-                    this.ui.loadingScreen.classList.remove('hidden');
-                    this.ui.loadingText.textContent = 'AI đang chuẩn bị bài học mới cho bạn...';
-                    const newWords = await this.generateAiSessionWords(type);
-                    if (newWords && newWords.length > 0) {
-                        this.currentSessionWords = newWords;
-                    } else {
-                        this.ui.loadingScreen.classList.add('hidden');
-                        alert('Rất tiếc, không thể tạo bài học AI vào lúc này. Vui lòng thử lại sau.');
-                        this.reset();
-                        return;
-                    }
-                } else { // Normal mode
-                    let wordPool = this.vocabulary;
-                    if (type === 'verb-forms') {
-                        wordPool = this.vocabulary.filter(w => w.type === 'verb' && w.v2 !== w.v1);
-                        if (wordPool.length < this.sessionLength) wordPool = this.vocabulary.filter(w => w.type === 'verb');
-                    }
-                    this.currentSessionWords = this.shuffleArray(wordPool).slice(0, this.sessionLength);
-                }
-                
-                this.ui.loadingScreen.classList.add('hidden');
-                this.ui.sessionScreen.classList.remove('hidden');
-                this.renderCurrentStep();
-            },
-
+        // --- HỆ THỐNG SAO (VISUAL) ---
+        class Star {
+            constructor() { this.reset(); }
             reset() {
-                this.ui.sessionScreen.classList.add('hidden');
-                this.ui.resultsScreen.classList.add('hidden');
-                this.ui.loadingScreen.classList.add('hidden');
-                this.ui.homeScreen.classList.remove('hidden');
-                this.ui.homeButton.classList.add('hidden');
-                this.closeModeModal();
-            },
-
-            // --- RENDERING ---
-            renderCurrentStep() {
-                this.ui.feedbackArea.innerHTML = '';
-                this.ui.aiExamplesArea.innerHTML = '';
-                this.ui.nextButton.classList.add('hidden');
-                
-                if (this.currentWordIndex >= this.currentSessionWords.length) {
-                    this.showResults();
-                    return;
-                }
-
-                this.updateProgress();
-                const word = this.currentSessionWords[this.currentWordIndex];
-
-                if (this.sessionType === 'verb-forms' && word.type !== 'verb') {
-                    this.nextStep();
-                    return;
-                }
-
-                switch (this.sessionType) {
-                    case 'flashcards': this.renderFlashcard(word); break;
-                    case 'multiple-choice': this.renderMultipleChoice(word); break;
-                    case 'fill-in-blank': this.renderFillInBlank(word); break;
-                    case 'verb-forms': this.renderVerbForms(word); break;
-                }
-                this.addTtsListeners();
-            },
-            
-            updateProgress() {
-                const progress = (this.currentWordIndex / this.sessionLength) * 100;
-                this.ui.progressBar.style.width = `${progress}%`;
-                this.ui.progressText.textContent = `${this.currentWordIndex} / ${this.sessionLength}`;
-            },
-
-            // --- FIX: Restored missing render functions ---
-            renderFlashcard(word) {
-                const typeMap = { 'noun': 'Danh từ', 'verb': 'Động từ', 'adjective': 'Tính từ', 'adverb': 'Trạng từ' };
-                let verbFormsHTML = '';
-                if (word.type === 'verb') {
-                    verbFormsHTML = `
-                        <div class="mt-4 text-center">
-                            <span class="font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded">V1:</span> ${word.v1} &nbsp;
-                            <span class="font-semibold bg-green-100 text-green-800 px-2 py-1 rounded">V2:</span> ${word.v2} &nbsp;
-                            <span class="font-semibold bg-purple-100 text-purple-800 px-2 py-1 rounded">V3:</span> ${word.v3}
-                        </div>
-                    `;
-                }
-
-                this.ui.sessionContent.innerHTML = `
-                    <div class="perspective-1000 mx-auto w-full max-w-md h-64">
-                        <div class="card relative w-full h-full">
-                            <!-- Front -->
-                            <div class="card-face absolute w-full h-full flex items-center justify-center bg-white rounded-xl shadow-lg border-2 border-blue-200">
-                                <h2 class="text-5xl font-bold">${word.word}</h2>
-                                <button class="tts-button absolute top-4 right-4" data-text="${word.word}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" /></svg>
-                                </button>
-                            </div>
-                            <!-- Back -->
-                            <div class="card-face card-face-back absolute w-full h-full flex flex-col items-center justify-center bg-blue-50 rounded-xl shadow-lg p-4 border-2 border-blue-200">
-                                <p class="text-2xl font-semibold text-blue-800">${word.definition}</p>
-                                <p class="text-slate-500 font-medium mt-1">(${typeMap[word.type]})</p>
-                                ${verbFormsHTML}
-                                <p class="text-slate-700 italic mt-4 text-center">
-                                    VD: ${word.example}
-                                    <button class="tts-button ml-1" data-text="${word.example}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" /></svg>
-                                    </button>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-center mt-4"><button id="flip-button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Lật thẻ</button></div>`;
-                
-                const card = this.ui.sessionContent.querySelector('.card');
-                document.getElementById('flip-button').addEventListener('click', () => {
-                    card.classList.toggle('is-flipped');
-                    this.ui.nextButton.classList.remove('hidden');
-                });
-            },
-
-            renderMultipleChoice(word) {
-                const options = this.generateOptions(word);
-                const optionsHTML = options.map(opt => `<button class="btn-answer w-full text-left p-4 bg-white border-2 border-gray-200 rounded-lg shadow-sm hover:bg-blue-50 hover:border-blue-300 transition-all">${opt.definition}</button>`).join('');
-                this.ui.sessionContent.innerHTML = `
-                    <div class="text-center mb-6">
-                        <p class="text-lg text-slate-600">Từ nào có nghĩa là:</p>
-                        <div class="flex items-center justify-center gap-2">
-                           <h2 class="text-4xl font-bold text-blue-600">${word.word}</h2>
-                           <button class="tts-button" data-text="${word.word}">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" /></svg>
-                           </button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">${optionsHTML}</div>`;
-                this.ui.sessionContent.querySelectorAll('.btn-answer').forEach((button, index) => {
-                    button.addEventListener('click', () => this.checkAnswer(options[index].word === word.word, button));
-                });
-            },
-            
-            renderFillInBlank(word) {
-                let sentence = word.example;
-                let wordToReplace = word.word;
-
-                if (word.type === 'verb') {
-                    const verbForms = [word.v1, word.v2, word.v3].filter(Boolean).sort((a, b) => b.length - a.length);
-                    const uniqueVerbForms = [...new Set(verbForms)];
-                    for (const form of uniqueVerbForms) {
-                        const regex = new RegExp(`\\b${form}\\b`, 'i');
-                        if (regex.test(sentence)) {
-                            wordToReplace = form;
-                            break;
-                        }
-                    }
-                }
-                
-                const finalRegex = new RegExp(`\\b${wordToReplace}\\b`, 'i');
-                sentence = sentence.replace(finalRegex, '______');
-
-                const hintHTML = word.english_definition 
-                    ? `<p class="text-base text-slate-500 mt-4 italic">Gợi ý (English): ${word.english_definition}</p>` 
-                    : '';
-
-                this.ui.sessionContent.innerHTML = `
-                    <div class="text-center max-w-2xl mx-auto">
-                        <p class="text-xl text-slate-700 mb-4">Điền từ còn thiếu vào câu:</p>
-                        <p class="text-2xl bg-white p-6 rounded-lg shadow-inner mb-2">
-                            ${sentence}
-                            <button class="tts-button ml-1" data-text="${word.example}">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" /></svg>
-                            </button>
-                        </p>
-                        ${hintHTML}
-                        <input id="blank-input" type="text" class="text-center text-xl w-full max-w-sm p-3 border-2 border-gray-300 rounded-lg mt-4" placeholder="Nhập câu trả lời...">
-                        <button id="check-blank-button" class="mt-4 bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-8 rounded-lg shadow-md">Kiểm tra</button>
-                    </div>`;
-                const input = document.getElementById('blank-input');
-                document.getElementById('check-blank-button').addEventListener('click', () => this.checkAnswer(input.value.trim().toLowerCase() === word.word.toLowerCase(), input));
-                input.addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('check-blank-button').click(); });
-            },
-            
-            renderVerbForms(word) {
-                this.ui.sessionContent.innerHTML = `
-                     <div class="text-center max-w-2xl mx-auto">
-                        <p class="text-xl text-slate-700 mb-4">Điền dạng V2 và V3 của động từ:</p>
-                         <div class="flex items-center justify-center gap-2 mb-8">
-                           <h2 class="text-5xl font-bold text-orange-500">${word.v1}</h2>
-                           <button class="tts-button" data-text="${word.v1}">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" /></svg>
-                           </button>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="v2-input" class="block text-lg font-medium text-slate-600">V2 (quá khứ)</label>
-                                <input id="v2-input" type="text" class="mt-1 text-center text-xl w-full p-3 border-2 border-gray-300 rounded-lg">
-                            </div>
-                             <div>
-                                <label for="v3-input" class="block text-lg font-medium text-slate-600">V3 (quá khứ phân từ)</label>
-                                <input id="v3-input" type="text" class="mt-1 text-center text-xl w-full p-3 border-2 border-gray-300 rounded-lg">
-                            </div>
-                        </div>
-                        <button id="check-verb-button" class="mt-8 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-lg shadow-md">Kiểm tra</button>
-                    </div>`;
-                const v2Input = document.getElementById('v2-input');
-                const v3Input = document.getElementById('v3-input');
-                document.getElementById('check-verb-button').addEventListener('click', () => this.checkAnswer(v2Input.value.trim().toLowerCase() === word.v2.toLowerCase() && v3Input.value.trim().toLowerCase() === word.v3.toLowerCase(), [v2Input, v3Input]));
-            },
-
-            showResults() {
-                this.ui.sessionScreen.classList.add('hidden');
-                this.ui.resultsScreen.classList.remove('hidden');
-                this.ui.scoreDisplay.textContent = `${this.score} / ${this.sessionLength}`;
-                let reviewHTML = '<h3 class="text-xl font-bold mb-4">Những từ cần xem lại:</h3>';
-                if (this.reviewedWords.length > 0) {
-                    reviewHTML += '<ul class="space-y-3">';
-                    this.reviewedWords.forEach(item => {
-                        reviewHTML += `<li class="p-3 bg-red-50 rounded-lg border border-red-200"><span class="font-bold text-red-700">${item.word}</span>: ${item.definition}</li>`;
-                    });
-                    reviewHTML += '</ul>';
+                const r = (Math.min(width, height)) * (0.2 + Math.random() * 1.5);
+                const theta = Math.random() * Math.PI * 2;
+                this.x = r * Math.cos(theta);
+                this.y = r * Math.sin(theta);
+                this.size = Math.random() * 2 + 0.5;
+                this.baseSize = this.size;
+                this.isSpecial = Math.random() < 0.15;
+                if (this.isSpecial) {
+                    this.size = 5 + Math.random() * 5;
+                    this.baseSize = this.size;
+                    this.color = `hsl(${Math.random()*60+200}, 100%, 80%)`;
                 } else {
-                    reviewHTML += '<p class="text-green-600">Tuyệt vời! Bạn đã trả lời đúng tất cả các câu hỏi.</p>';
+                    this.color = `rgba(255,255,255,${Math.random()*0.8+0.2})`;
                 }
-                this.ui.reviewArea.innerHTML = reviewHTML;
-            },
-
-            // --- LOGIC & ACTIONS ---
-            nextStep() {
-                this.currentWordIndex++;
-                this.renderCurrentStep();
-            },
-            
-            generateOptions(correctWord) {
-                const wordPool = this.currentSessionWords.length > 4 ? this.currentSessionWords : [...this.currentSessionWords, ...this.vocabulary];
-                let options = [correctWord];
-                let distractors = this.shuffleArray(wordPool.filter(w => w.word !== correctWord.word && w.definition !== correctWord.definition));
-                for (let i = 0; options.length < 4 && i < distractors.length; i++) {
-                    options.push(distractors[i]);
-                }
-                return this.shuffleArray(options);
-            },
-
-            checkAnswer(isCorrect, element) {
-                const currentWord = this.currentSessionWords[this.currentWordIndex];
-                let feedbackHTML = '';
-
-                if (isCorrect) {
-                    this.score++;
-                    feedbackHTML = `<div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md" role="alert"><p class="font-bold">Chính xác!</p></div>`;
-                    if (Array.isArray(element)) {
-                        element.forEach(el => el.classList.add('border-green-500', 'ring-2', 'ring-green-300'));
-                    } else if (element.tagName === 'BUTTON') {
-                        element.classList.add('correct');
-                    } else {
-                        element.classList.add('border-green-500', 'ring-2', 'ring-green-300');
-                    }
-                    this.ui.feedbackArea.innerHTML = feedbackHTML;
-                    this.ui.aiExamplesArea.innerHTML = `<div class="text-center mt-4"><button id="ai-example-btn" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg shadow-md">✨ Tạo thêm ví dụ</button></div>`;
-                    document.getElementById('ai-example-btn').addEventListener('click', (e) => {
-                        e.target.disabled = true;
-                        e.target.innerHTML = 'Đang tạo...';
-                        this.generateMoreExamples(currentWord);
-                    });
-
+                this.blinkSpeed = 0.02 + Math.random() * 0.05;
+                this.blinkAngle = Math.random() * Math.PI * 2;
+            }
+            update() {
+                this.blinkAngle += this.blinkSpeed;
+                const blink = Math.sin(this.blinkAngle);
+                this.size = this.isSpecial 
+                    ? this.baseSize + blink * 2 
+                    : this.baseSize + blink * 0.5;
+            }
+            draw(ctx) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, Math.max(0, this.size), 0, Math.PI * 2);
+                if (this.isSpecial) {
+                    ctx.shadowBlur = 15; ctx.shadowColor = this.color; ctx.fillStyle = "#fff";
                 } else {
-                    this.reviewedWords.push(currentWord);
-                    let correctAnswerText = `Đáp án đúng là "${currentWord.word}".`;
-                    if (this.sessionType === 'verb-forms') {
-                         correctAnswerText = `Đáp án đúng là V2: <b>${currentWord.v2}</b>, V3: <b>${currentWord.v3}</b>.`;
-                    }
-                    feedbackHTML = `<div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md" role="alert"><p class="font-bold">Chưa đúng!</p><p>${correctAnswerText}</p></div>`;
-                     if (Array.isArray(element)) {
-                        element.forEach(el => el.classList.add('border-red-500', 'ring-2', 'ring-red-300'));
-                    } else if (element.tagName === 'BUTTON') {
-                        element.classList.add('incorrect');
-                    } else {
-                        element.classList.add('border-red-500', 'ring-2', 'ring-red-300');
-                    }
-                    this.ui.feedbackArea.innerHTML = feedbackHTML;
+                    ctx.shadowBlur = 0; ctx.fillStyle = this.color;
                 }
-                this.ui.nextButton.classList.remove('hidden');
-                this.ui.sessionContent.querySelectorAll('button, input').forEach(el => el.disabled = true);
-            },
+                ctx.fill();
+            }
+        }
 
-            downloadReport() {
-                const typeMap = { 'noun': 'Danh từ', 'verb': 'Động từ', 'adjective': 'Tính từ', 'adverb': 'Trạng từ' };
-                let reportContent = `BÁO CÁO HỌC TẬP - LEXIPATH\n`;
-                reportContent += `Ngày: ${new Date().toLocaleDateString('vi-VN')}\n`;
-                reportContent += `Điểm số: ${this.score} / ${this.sessionLength}\n`;
-                reportContent += `====================================\n\n`;
+        // --- XỬ LÝ MEDIAPIPE (CAMERA) ---
+        function onResults(results) {
+            if (controlState.mode !== 'CAMERA') return;
 
-                this.currentSessionWords.forEach((word, index) => {
-                    reportContent += `TỪ VỰNG ${index + 1}:\n`;
-                    reportContent += `--------------------\n`;
-                    reportContent += `Từ: ${word.word}\n`;
-                    reportContent += `Loại từ: ${typeMap[word.type]}\n`;
-                    if (word.type === 'verb') {
-                        reportContent += `Dạng động từ: ${word.v1} - ${word.v2} - ${word.v3}\n`;
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                statusBar.innerText = "🖐️ Đã thấy tay! Dùng ngón trỏ...";
+                const lm = results.multiHandLandmarks[0];
+                const indexTip = lm[8];
+
+                // Xử lý tọa độ
+                let sx = (1 - indexTip.x) * width; // Mặc định lật ngang (gương)
+                if (!isFrontCamera) sx = indexTip.x * width; // Cam sau không lật
+                let sy = indexTip.y * height;
+
+                // Smoothing
+                controlState.x += (sx - controlState.x) * 0.3;
+                controlState.y += (sy - controlState.y) * 0.3;
+                controlState.active = true;
+
+                // Gesture: Xòe tay (OPEN) để mở
+                const wrist = lm[0];
+                const tip = lm[8], pip = lm[6];
+                const isOpen = Math.hypot(tip.x-wrist.x, tip.y-wrist.y) > 
+                               Math.hypot(pip.x-wrist.x, pip.y-wrist.y) + 0.05; // Logic đơn giản hóa
+
+                if (isOpen) {
+                    if (hoveredStarIndex !== -1 && !modal.classList.contains('active')) {
+                        openMessage();
                     }
-                    reportContent += `Định nghĩa (VN): ${word.definition}\n`;
-                    reportContent += `Định nghĩa (EN): ${word.english_definition}\n`;
-                    reportContent += `Ví dụ: ${word.example}\n\n`;
+                }
+                
+                // Logic Xoay
+                const cx = width/2;
+                if (sx < cx - width*0.3) controlState.rotationSpeed = -0.005;
+                else if (sx > cx + width*0.3) controlState.rotationSpeed = 0.005;
+                else controlState.rotationSpeed = 0;
+
+            } else {
+                statusBar.innerText = "👀 Đang tìm tay...";
+                controlState.active = false;
+                controlState.rotationSpeed = 0.0005;
+            }
+        }
+
+        // --- XỬ LÝ CẢM ỨNG (TOUCH/MOUSE FALLBACK) ---
+        function setupTouchEvents() {
+            // Touch
+            canvas.addEventListener('touchstart', handleTouch);
+            canvas.addEventListener('touchmove', handleTouch);
+            canvas.addEventListener('touchend', () => { 
+                controlState.active = false; 
+                controlState.rotationSpeed = 0.0005;
+            });
+            
+            // Mouse
+            canvas.addEventListener('mousemove', (e) => {
+                if(controlState.mode === 'TOUCH') {
+                    controlState.x = e.clientX;
+                    controlState.y = e.clientY;
+                    controlState.active = true;
+                }
+            });
+            canvas.addEventListener('click', () => {
+                if(controlState.mode === 'TOUCH' && hoveredStarIndex !== -1) openMessage();
+                else if (modal.classList.contains('active')) closeMessage();
+            });
+        }
+
+        function handleTouch(e) {
+            if(controlState.mode === 'TOUCH') {
+                e.preventDefault(); // Chặn scroll
+                const touch = e.touches[0];
+                controlState.x = touch.clientX;
+                controlState.y = touch.clientY;
+                controlState.active = true;
+
+                // Chạm vào sao để mở
+                if (hoveredStarIndex !== -1 && !modal.classList.contains('active')) {
+                   // Cần delay nhẹ hoặc tap riêng, ở đây làm đơn giản: chạm trúng là mở
+                   openMessage();
+                }
+            }
+        }
+
+        // --- LOGIC CHUNG ---
+        function init() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            stars = [];
+            for(let i=0; i<250; i++) stars.push(new Star());
+            
+            // Mặc định bắt đầu ở chế độ CAMERA, nhưng setup sẵn Touch
+            setupTouchEvents();
+        }
+
+        function checkHover() {
+            hoveredStarIndex = -1;
+            if (modal.classList.contains('active')) return;
+
+            const cos = Math.cos(globalRotation);
+            const sin = Math.sin(globalRotation);
+            const cx = width/2, cy = height/2;
+
+            for (let i = 0; i < stars.length; i++) {
+                const s = stars[i];
+                if (!s.isSpecial) continue;
+                
+                // Tọa độ thực trên màn hình
+                const sx = cx + (s.x * cos - s.y * sin);
+                const sy = cy + (s.x * sin + s.y * cos);
+                
+                // Khoảng cách
+                const dist = Math.hypot(sx - controlState.x, sy - controlState.y);
+                if (dist < 50) { // Bán kính 50px
+                    hoveredStarIndex = i;
+                    break;
+                }
+            }
+        }
+
+        function openMessage() {
+            msgText.innerText = messages[Math.floor(Math.random()*messages.length)];
+            modal.classList.add('active');
+            createExplosion(controlState.x, controlState.y);
+            if(navigator.vibrate) navigator.vibrate(50);
+        }
+        function closeMessage() { modal.classList.remove('active'); }
+
+        function createExplosion(x, y) {
+            const b = document.createElement('div');
+            Object.assign(b.style, {
+                position:'absolute', left:x+'px', top:y+'px', width:'10px', height:'10px',
+                background:'white', borderRadius:'50%', boxShadow:'0 0 30px 10px white',
+                transform:'translate(-50%,-50%)', transition:'all 0.5s', pointerEvents:'none', zIndex: 200
+            });
+            document.body.appendChild(b);
+            setTimeout(()=> { b.style.transform='translate(-50%,-50%) scale(5)'; b.style.opacity='0'; }, 20);
+            setTimeout(()=> b.remove(), 500);
+        }
+
+        // --- KHỞI ĐỘNG CAMERA ---
+        async function startCameraAI() {
+            try {
+                statusBar.innerText = "Đang khởi động Camera AI...";
+                
+                hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+                hands.setOptions({
+                    maxNumHands: 1,
+                    modelComplexity: 0, // Lite mode
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+                hands.onResults(onResults);
+
+                if(camera) { await camera.stop(); }
+                
+                camera = new Camera(videoElement, {
+                    onFrame: async () => { await hands.send({image: videoElement}); },
+                    width: 480, height: 640,
+                    facingMode: isFrontCamera ? 'user' : 'environment'
                 });
 
-                const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'LexiPath_Report.txt';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            },
+                await camera.start();
+                statusBar.innerText = "Camera sẵn sàng! Hãy đưa tay lên.";
+                controlState.mode = 'CAMERA';
 
-            // --- API INTEGRATION ---
-            async speakText(text, button) { /* ... unchanged, uses clearer voice ... */ },
-            async generateAiSessionWords(sessionType, wordType = 'all', count = 10) {
-                let prompt;
-                const baseInstruction = `Generate a list of ${count} English words for a learning session. The words should be of intermediate difficulty. For each word, provide its simple Vietnamese definition, a simple English definition, and a simple English example sentence.`;
-                
-                if (sessionType === 'multiple-choice' && wordType !== 'all') {
-                    prompt = `Generate a list of ${count} English ${wordType.toUpperCase()}S for a learning session. The words should be of intermediate difficulty. For each word, provide its simple Vietnamese definition, a simple English definition, and a simple English example sentence.`;
-                    if (wordType === 'verb') {
-                         prompt += ` Also provide its v1, v2, and v3 forms.`
-                    }
-                } else if (sessionType === 'verb-forms') {
-                    prompt = `Generate a list of ${count} English VERBS for a learning session. Include both regular and irregular verbs. For each verb, provide its v1, v2, and v3 forms, a simple Vietnamese definition, a simple English definition, and a simple English example sentence using the base form (v1).`;
-                } else {
-                    prompt = `${baseInstruction} Include a mix of nouns, verbs (with v1, v2, v3 forms), adjectives, and adverbs.`;
+            } catch (err) {
+                console.error(err);
+                statusBar.innerText = "Lỗi Camera. Đã chuyển sang chế độ Cảm ứng.";
+                statusBar.style.color = "#ff5555";
+                controlState.mode = 'TOUCH';
+            }
+        }
+
+        // Nút chuyển chế độ
+        window.toggleMode = function() {
+            if (controlState.mode === 'CAMERA') {
+                // Chuyển sang Touch
+                if(camera) { 
+                    // Tắt thủ công stream để tiết kiệm pin
+                    const stream = videoElement.srcObject;
+                    if(stream) stream.getTracks().forEach(t=>t.stop());
                 }
+                controlState.mode = 'TOUCH';
+                statusBar.innerText = "Chế độ: CẢM ỨNG (Chạm để chơi)";
+                statusBar.style.color = "#00aaff";
+            } else {
+                // Chuyển sang Camera
+                startCameraAI();
+                statusBar.style.color = "#00ff88";
+            }
+        }
 
-                const schema = {
-                    type: "ARRAY",
-                    items: {
-                        type: "OBJECT",
-                        properties: {
-                            word: { type: "STRING" },
-                            type: { type: "STRING", enum: ["noun", "verb", "adjective", "adverb"] },
-                            v1: { type: "STRING" },
-                            v2: { type: "STRING" },
-                            v3: { type: "STRING" },
-                            definition: { type: "STRING" },
-                            english_definition: { type: "STRING" },
-                            example: { type: "STRING" },
-                        },
-                        // --- FIX: Made english_definition optional to prevent API errors ---
-                        required: ["word", "type", "definition", "example"],
-                    }
-                };
+        // --- VÒNG LẶP CHÍNH (ANIMATION LOOP) ---
+        function animate() {
+            // Xóa canvas
+            ctx.fillStyle = "#050510";
+            ctx.fillRect(0, 0, width, height);
 
-                try {
-                    const apiKey = ""; // Injected by environment
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-                    const payload = {
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { responseMimeType: "application/json", responseSchema: schema },
-                    };
-                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
-                    const result = await response.json();
-                    const newWordsText = result.candidates[0].content.parts[0].text;
-                    const newWords = JSON.parse(newWordsText);
-                    return newWords.map(word => ({
-                        ...word,
-                        v1: word.type === 'verb' ? word.word : '',
-                        v2: word.type === 'verb' ? (word.v2 || word.word) : '',
-                        v3: word.type === 'verb' ? (word.v3 || word.word) : '',
-                    }));
-                } catch (error) {
-                    console.error("Failed to generate AI session words:", error);
-                    return null;
-                }
-            },
+            // Cập nhật góc xoay
+            globalRotation += controlState.rotationSpeed;
+
+            // Vẽ Vũ trụ
+            ctx.save();
+            ctx.translate(width/2, height/2);
+            ctx.rotate(globalRotation);
             
-            addTtsListeners() { /* ... unchanged ... */ },
-            async generateMoreExamples(word) { /* ... unchanged ... */ },
-
-            // --- UTILITY ---
-            shuffleArray(array) { 
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
+            stars.forEach((s, i) => {
+                s.update();
+                // Highlight nếu đang hover
+                if (i === hoveredStarIndex) {
+                    ctx.save();
+                    ctx.shadowBlur = 20; ctx.shadowColor = "#00ff88"; ctx.fillStyle = "#fff";
+                    ctx.beginPath(); ctx.arc(s.x, s.y, s.size*2, 0, Math.PI*2); ctx.fill();
+                    ctx.restore();
+                } else {
+                    s.draw(ctx);
                 }
-                return array;
-            },
-            base64ToArrayBuffer(base64) { /* ... unchanged ... */ },
-            pcmToWav(pcmData, numChannels, sampleRate) { /* ... unchanged ... */ }
+            });
+            ctx.restore();
+
+            // Vẽ Con trỏ (Cursor)
+            if (controlState.active || controlState.mode === 'TOUCH') {
+                checkHover(); // Kiểm tra va chạm
+
+                ctx.beginPath();
+                ctx.arc(controlState.x, controlState.y, 20, 0, Math.PI*2);
+                ctx.lineWidth = 2;
+                
+                if (controlState.mode === 'CAMERA') {
+                    ctx.strokeStyle = "#00ff88"; 
+                    ctx.fillStyle = "rgba(0,255,136,0.1)";
+                } else {
+                    ctx.strokeStyle = "#00aaff"; // Màu xanh dương cho Touch
+                    ctx.fillStyle = "rgba(0,170,255,0.1)";
+                }
+                
+                if (hoveredStarIndex !== -1) {
+                    ctx.fillStyle = "rgba(255,255,255,0.3)"; // Sáng lên khi trúng sao
+                    ctx.lineWidth = 4;
+                }
+
+                ctx.fill(); ctx.stroke();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- KHỞI CHẠY ---
+        window.onload = function() {
+            init();
+            animate(); // QUAN TRỌNG: Gọi hàm này để bắt đầu vẽ ngay lập tức!
+            
+            // Thử khởi động camera sau 1s
+            setTimeout(startCameraAI, 1000);
         };
+        
+        window.addEventListener('resize', init);
 
-        document.addEventListener('DOMContentLoaded', () => app.init());
     </script>
 </body>
 </html>
