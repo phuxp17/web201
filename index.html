@@ -90,9 +90,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vũ Trụ Di Động (Fix)</title>
+    <title>Vũ Trụ AI Mobile</title>
     
-    <!-- Tải thư viện -->
+    <!-- Import MediaPipe -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -102,462 +102,343 @@
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #050510;
-            font-family: sans-serif;
-            touch-action: none; /* Chặn kéo trang */
+            background-color: #000;
+            font-family: 'Segoe UI', sans-serif;
+            touch-action: none;
         }
 
-        canvas {
+        canvas#sky {
             display: block;
             width: 100vw;
             height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* Video Debug: Hiển thị nhỏ ở góc để biết cam có chạy ko */
+        .input_video {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 120px; /* Nhỏ gọn */
+            height: 160px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 2px solid #00ff88;
+            z-index: 100; /* Luôn nổi lên trên */
+            opacity: 0.8;
+            transform: scaleX(-1); /* Lật gương cho tự nhiên */
+        }
+
+        /* Màn hình Chào mừng / Nút Start */
+        #start-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            color: white;
+            text-align: center;
+        }
+
+        #start-btn {
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #000;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Bảng log trạng thái */
+        #debug-log {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #00ff88;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            font-family: monospace;
+            font-size: 12px;
+            border-radius: 5px;
+            z-index: 101;
+            pointer-events: none;
+            max-width: 80%;
         }
 
         /* Modal thông điệp */
-        #message-modal {
+        #modal {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.8);
-            background: rgba(15, 25, 50, 0.95);
-            border: 1px solid rgba(100, 200, 255, 0.5);
-            padding: 25px;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(20, 30, 50, 0.95);
+            padding: 30px;
             border-radius: 20px;
             text-align: center;
-            color: #fff;
-            box-shadow: 0 0 40px rgba(0, 200, 255, 0.3);
+            color: white;
+            border: 1px solid #00ccff;
             opacity: 0;
             visibility: hidden;
-            transition: all 0.3s ease;
-            z-index: 100;
+            transition: 0.3s;
+            z-index: 150;
             width: 80%;
-            max-width: 320px;
         }
-
-        #message-modal.active {
-            opacity: 1;
-            visibility: visible;
+        #modal.show {
+            opacity: 1; visibility: visible;
             transform: translate(-50%, -50%) scale(1);
-        }
-
-        #message-text {
-            font-size: 1.4rem;
-            margin: 15px 0;
-            color: #a1c4fd;
-            font-weight: bold;
-        }
-
-        /* Thông báo trạng thái/Lỗi */
-        #status-bar {
-            position: absolute;
-            top: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.6);
-            color: #00ff88;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            border: 1px solid #00ff88;
-            z-index: 50;
-            white-space: nowrap;
-            max-width: 90%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* Nút Camera */
-        #cam-btn {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            width: 40px;
-            height: 40px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 20px;
-            cursor: pointer;
-            z-index: 51;
-            border: 1px solid rgba(255,255,255,0.5);
-        }
-
-        /* Hướng dẫn dưới đáy */
-        .hint {
-            position: absolute;
-            bottom: 20px;
-            width: 100%;
-            text-align: center;
-            color: rgba(255,255,255,0.5);
-            font-size: 0.8rem;
-            pointer-events: none;
-        }
-
-        /* Video ẩn nhưng không tắt display để tránh lỗi iOS */
-        .video-input {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            opacity: 0;
-            top: 0;
-            left: 0;
-            pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-    <div id="status-bar">Đang tải vũ trụ...</div>
-    <div id="cam-btn" onclick="toggleMode()">📷</div>
-    
-    <div class="hint">
-        ☝️ Dùng ngón trỏ (Camera) hoặc Chạm tay (Cảm ứng) để chọn sao
+    <!-- Màn hình bắt đầu -->
+    <div id="start-screen">
+        <h1>VŨ TRỤ AI</h1>
+        <p>1. Cấp quyền Camera<br>2. Đưa tay lên trước màn hình</p>
+        <button id="start-btn" onclick="startApp()">BẮT ĐẦU NGAY 🚀</button>
     </div>
 
-    <video class="video-input" playsinline muted autoplay></video>
+    <!-- Log hiển thị lỗi/trạng thái -->
+    <div id="debug-log">Chờ người dùng nhấn Bắt đầu...</div>
+
+    <!-- Video thật để debug -->
+    <video class="input_video" playsinline muted></video>
+
+    <!-- Canvas vẽ sao -->
     <canvas id="sky"></canvas>
 
-    <div id="message-modal">
-        <h3 style="margin:0; color:#4facfe;">THÔNG ĐIỆP</h3>
-        <p id="message-text">...</p>
-        <div style="font-size:0.8rem; color:#888">(Chạm ra ngoài hoặc nắm tay để đóng)</div>
+    <!-- Modal -->
+    <div id="modal">
+        <h2 style="color:#00ccff; margin:0 0 10px 0">THÔNG ĐIỆP</h2>
+        <p id="msg-content" style="font-size:1.3em; font-weight:bold">...</p>
+        <p style="font-size:0.8em; color:#aaa; margin-top:20px">(Nắm tay để đóng)</p>
     </div>
 
     <script>
+        const log = document.getElementById('debug-log');
+        const video = document.querySelector('.input_video');
         const canvas = document.getElementById('sky');
         const ctx = canvas.getContext('2d');
-        const modal = document.getElementById('message-modal');
-        const msgText = document.getElementById('message-text');
-        const statusBar = document.getElementById('status-bar');
-        const videoElement = document.querySelector('.video-input');
+        const modal = document.getElementById('modal');
+        const msgContent = document.getElementById('msg-content');
 
         let width, height;
         let stars = [];
+        let camera;
+        let hands;
+        let isRunning = false;
         
-        // Trạng thái điều khiển
-        let controlState = { 
-            x: -100, y: -100, 
-            active: false, // Có đang tương tác không
-            mode: 'CAMERA', // 'CAMERA' hoặc 'TOUCH'
-            rotationSpeed: 0.0005 
-        };
-        
-        let globalRotation = 0;
-        let hoveredStarIndex = -1;
-        let camera = null;
-        let isFrontCamera = true;
-        let hands = null;
+        // Trạng thái tay
+        let hand = { x: -100, y: -100, gesture: 'NONE', active: false };
+        let rotation = 0;
+        let speed = 0.0005;
 
         const messages = [
-            "Bạn là một ngôi sao sáng!", "Hạnh phúc ở ngay đây.", 
-            "Hãy tin vào điều kỳ diệu.", "Mọi chuyện sẽ ổn thôi.",
-            "Vũ trụ yêu thương bạn.", "Cười lên nào!",
-            "Thành công đang đến gần."
+            "Bạn thật tuyệt vời!", "Hãy cười lên nhé!", "May mắn đang đến!", 
+            "Tin vào chính mình.", "Vũ trụ yêu bạn.", "Mạnh mẽ lên!"
         ];
 
-        // --- HỆ THỐNG SAO (VISUAL) ---
+        // --- HỆ THỐNG SAO ---
         class Star {
             constructor() { this.reset(); }
             reset() {
-                const r = (Math.min(width, height)) * (0.2 + Math.random() * 1.5);
-                const theta = Math.random() * Math.PI * 2;
-                this.x = r * Math.cos(theta);
-                this.y = r * Math.sin(theta);
+                const r = Math.min(width, height) * (0.2 + Math.random() * 1.5);
+                const a = Math.random() * Math.PI * 2;
+                this.x = r * Math.cos(a);
+                this.y = r * Math.sin(a);
                 this.size = Math.random() * 2 + 0.5;
-                this.baseSize = this.size;
-                this.isSpecial = Math.random() < 0.15;
-                if (this.isSpecial) {
-                    this.size = 5 + Math.random() * 5;
-                    this.baseSize = this.size;
-                    this.color = `hsl(${Math.random()*60+200}, 100%, 80%)`;
-                } else {
-                    this.color = `rgba(255,255,255,${Math.random()*0.8+0.2})`;
-                }
-                this.blinkSpeed = 0.02 + Math.random() * 0.05;
-                this.blinkAngle = Math.random() * Math.PI * 2;
+                this.blink = Math.random();
+                this.color = Math.random() < 0.1 ? '#00ff88' : '#ffffff';
+                this.special = Math.random() < 0.1;
+                if(this.special) this.size += 3;
             }
-            update() {
-                this.blinkAngle += this.blinkSpeed;
-                const blink = Math.sin(this.blinkAngle);
-                this.size = this.isSpecial 
-                    ? this.baseSize + blink * 2 
-                    : this.baseSize + blink * 0.5;
-            }
-            draw(ctx) {
+            draw() {
+                this.blink += 0.05;
+                const s = this.size + Math.sin(this.blink) * (this.special ? 2 : 0.5);
                 ctx.beginPath();
-                ctx.arc(this.x, this.y, Math.max(0, this.size), 0, Math.PI * 2);
-                if (this.isSpecial) {
-                    ctx.shadowBlur = 15; ctx.shadowColor = this.color; ctx.fillStyle = "#fff";
+                ctx.arc(this.x, this.y, Math.max(0, s), 0, Math.PI*2);
+                ctx.fillStyle = this.color;
+                if(this.special) {
+                    ctx.shadowBlur = 10; ctx.shadowColor = this.color;
                 } else {
-                    ctx.shadowBlur = 0; ctx.fillStyle = this.color;
+                    ctx.shadowBlur = 0;
                 }
                 ctx.fill();
             }
         }
 
-        // --- XỬ LÝ MEDIAPIPE (CAMERA) ---
-        function onResults(results) {
-            if (controlState.mode !== 'CAMERA') return;
-
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                statusBar.innerText = "🖐️ Đã thấy tay! Dùng ngón trỏ...";
-                const lm = results.multiHandLandmarks[0];
-                const indexTip = lm[8];
-
-                // Xử lý tọa độ
-                let sx = (1 - indexTip.x) * width; // Mặc định lật ngang (gương)
-                if (!isFrontCamera) sx = indexTip.x * width; // Cam sau không lật
-                let sy = indexTip.y * height;
-
-                // Smoothing
-                controlState.x += (sx - controlState.x) * 0.3;
-                controlState.y += (sy - controlState.y) * 0.3;
-                controlState.active = true;
-
-                // Gesture: Xòe tay (OPEN) để mở
-                const wrist = lm[0];
-                const tip = lm[8], pip = lm[6];
-                const isOpen = Math.hypot(tip.x-wrist.x, tip.y-wrist.y) > 
-                               Math.hypot(pip.x-wrist.x, pip.y-wrist.y) + 0.05; // Logic đơn giản hóa
-
-                if (isOpen) {
-                    if (hoveredStarIndex !== -1 && !modal.classList.contains('active')) {
-                        openMessage();
-                    }
-                }
-                
-                // Logic Xoay
-                const cx = width/2;
-                if (sx < cx - width*0.3) controlState.rotationSpeed = -0.005;
-                else if (sx > cx + width*0.3) controlState.rotationSpeed = 0.005;
-                else controlState.rotationSpeed = 0;
-
-            } else {
-                statusBar.innerText = "👀 Đang tìm tay...";
-                controlState.active = false;
-                controlState.rotationSpeed = 0.0005;
-            }
-        }
-
-        // --- XỬ LÝ CẢM ỨNG (TOUCH/MOUSE FALLBACK) ---
-        function setupTouchEvents() {
-            // Touch
-            canvas.addEventListener('touchstart', handleTouch);
-            canvas.addEventListener('touchmove', handleTouch);
-            canvas.addEventListener('touchend', () => { 
-                controlState.active = false; 
-                controlState.rotationSpeed = 0.0005;
-            });
-            
-            // Mouse
-            canvas.addEventListener('mousemove', (e) => {
-                if(controlState.mode === 'TOUCH') {
-                    controlState.x = e.clientX;
-                    controlState.y = e.clientY;
-                    controlState.active = true;
-                }
-            });
-            canvas.addEventListener('click', () => {
-                if(controlState.mode === 'TOUCH' && hoveredStarIndex !== -1) openMessage();
-                else if (modal.classList.contains('active')) closeMessage();
-            });
-        }
-
-        function handleTouch(e) {
-            if(controlState.mode === 'TOUCH') {
-                e.preventDefault(); // Chặn scroll
-                const touch = e.touches[0];
-                controlState.x = touch.clientX;
-                controlState.y = touch.clientY;
-                controlState.active = true;
-
-                // Chạm vào sao để mở
-                if (hoveredStarIndex !== -1 && !modal.classList.contains('active')) {
-                   // Cần delay nhẹ hoặc tap riêng, ở đây làm đơn giản: chạm trúng là mở
-                   openMessage();
-                }
-            }
-        }
-
-        // --- LOGIC CHUNG ---
-        function init() {
+        function initStars() {
             width = window.innerWidth;
             height = window.innerHeight;
             canvas.width = width;
             canvas.height = height;
             stars = [];
-            for(let i=0; i<250; i++) stars.push(new Star());
-            
-            // Mặc định bắt đầu ở chế độ CAMERA, nhưng setup sẵn Touch
-            setupTouchEvents();
+            for(let i=0; i<200; i++) stars.push(new Star());
         }
 
-        function checkHover() {
-            hoveredStarIndex = -1;
-            if (modal.classList.contains('active')) return;
+        // --- XỬ LÝ AI ---
+        function onResults(results) {
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                log.innerText = "✅ ĐÃ THẤY TAY! (Di chuyển để thử)";
+                log.style.color = "#00ff88";
 
-            const cos = Math.cos(globalRotation);
-            const sin = Math.sin(globalRotation);
-            const cx = width/2, cy = height/2;
-
-            for (let i = 0; i < stars.length; i++) {
-                const s = stars[i];
-                if (!s.isSpecial) continue;
+                const lm = results.multiHandLandmarks[0];
+                const index = lm[8]; // Ngón trỏ
                 
+                // Chuyển tọa độ (Lật ngang vì là cam trước)
+                let x = (1 - index.x) * width;
+                let y = index.y * height;
+
+                // Làm mượt
+                hand.x += (x - hand.x) * 0.5;
+                hand.y += (y - hand.y) * 0.5;
+                hand.active = true;
+
+                // Xoay vũ trụ
+                if (x < width * 0.3) speed = -0.005;
+                else if (x > width * 0.7) speed = 0.005;
+                else speed = 0;
+
+                // Check gesture (Mở/Đóng)
+                // Khoảng cách ngón cái (4) và ngón trỏ (8)
+                const d = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y);
+                // console.log(d); // Debug khoảng cách nếu cần
+                
+                if (d > 0.15) { // Xòe tay
+                    if (!modal.classList.contains('show')) checkClick();
+                } else if (d < 0.05) { // Nắm tay/Chụm
+                    if (modal.classList.contains('show')) modal.classList.remove('show');
+                }
+
+            } else {
+                log.innerText = "👀 Đang tìm tay... (Đưa tay vào khung)";
+                log.style.color = "yellow";
+                hand.active = false;
+                speed = 0.0005;
+            }
+        }
+
+        function checkClick() {
+            // Tìm sao gần nhất
+            const cos = Math.cos(rotation), sin = Math.sin(rotation);
+            const cx = width/2, cy = height/2;
+            
+            for(let s of stars) {
+                if(!s.special) continue;
                 // Tọa độ thực trên màn hình
                 const sx = cx + (s.x * cos - s.y * sin);
                 const sy = cy + (s.x * sin + s.y * cos);
                 
-                // Khoảng cách
-                const dist = Math.hypot(sx - controlState.x, sy - controlState.y);
-                if (dist < 50) { // Bán kính 50px
-                    hoveredStarIndex = i;
+                if (Math.hypot(sx - hand.x, sy - hand.y) < 50) {
+                    msgContent.innerText = messages[Math.floor(Math.random()*messages.length)];
+                    modal.classList.add('show');
+                    if(navigator.vibrate) navigator.vibrate(100);
                     break;
                 }
             }
         }
 
-        function openMessage() {
-            msgText.innerText = messages[Math.floor(Math.random()*messages.length)];
-            modal.classList.add('active');
-            createExplosion(controlState.x, controlState.y);
-            if(navigator.vibrate) navigator.vibrate(50);
-        }
-        function closeMessage() { modal.classList.remove('active'); }
+        // --- KHỞI ĐỘNG ---
+        async function startApp() {
+            document.getElementById('start-screen').style.display = 'none';
+            log.innerText = "⏳ Đang khởi động Camera & AI...";
 
-        function createExplosion(x, y) {
-            const b = document.createElement('div');
-            Object.assign(b.style, {
-                position:'absolute', left:x+'px', top:y+'px', width:'10px', height:'10px',
-                background:'white', borderRadius:'50%', boxShadow:'0 0 30px 10px white',
-                transform:'translate(-50%,-50%)', transition:'all 0.5s', pointerEvents:'none', zIndex: 200
+            // 1. Setup MediaPipe
+            hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+            hands.setOptions({
+                maxNumHands: 1,
+                modelComplexity: 0, // Lite mode (nhanh nhất cho mobile)
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
             });
-            document.body.appendChild(b);
-            setTimeout(()=> { b.style.transform='translate(-50%,-50%) scale(5)'; b.style.opacity='0'; }, 20);
-            setTimeout(()=> b.remove(), 500);
-        }
+            hands.onResults(onResults);
 
-        // --- KHỞI ĐỘNG CAMERA ---
-        async function startCameraAI() {
+            // 2. Setup Camera Thủ Công (Tin cậy hơn Camera Utils trên một số máy)
             try {
-                statusBar.innerText = "Đang khởi động Camera AI...";
-                
-                hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-                hands.setOptions({
-                    maxNumHands: 1,
-                    modelComplexity: 0, // Lite mode
-                    minDetectionConfidence: 0.5,
-                    minTrackingConfidence: 0.5
-                });
-                hands.onResults(onResults);
-
-                if(camera) { await camera.stop(); }
-                
-                camera = new Camera(videoElement, {
-                    onFrame: async () => { await hands.send({image: videoElement}); },
-                    width: 480, height: 640,
-                    facingMode: isFrontCamera ? 'user' : 'environment'
+                // Yêu cầu quyền Cam
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'user', // Cam trước
+                        width: { ideal: 640 }, // Giảm độ phân giải để nhẹ máy
+                        height: { ideal: 480 }
+                    }
                 });
 
-                await camera.start();
-                statusBar.innerText = "Camera sẵn sàng! Hãy đưa tay lên.";
-                controlState.mode = 'CAMERA';
+                video.srcObject = stream;
+                // QUAN TRỌNG: Phải gọi play()
+                await video.play();
+
+                log.innerText = "📷 Camera đã bật. Đang tải mô hình...";
+
+                // Bắt đầu vòng lặp gửi ảnh sang AI
+                async function aiLoop() {
+                    if (video.readyState >= 2) {
+                        await hands.send({image: video});
+                    }
+                    requestAnimationFrame(aiLoop);
+                }
+                aiLoop();
 
             } catch (err) {
                 console.error(err);
-                statusBar.innerText = "Lỗi Camera. Đã chuyển sang chế độ Cảm ứng.";
-                statusBar.style.color = "#ff5555";
-                controlState.mode = 'TOUCH';
+                log.innerText = "❌ Lỗi: " + err.message + " (Hãy kiểm tra quyền Camera/HTTPS)";
+                log.style.color = "red";
+                alert("Không mở được Camera: " + err.message);
             }
+            
+            // Bắt đầu vẽ sao
+            initStars();
+            animate();
         }
 
-        // Nút chuyển chế độ
-        window.toggleMode = function() {
-            if (controlState.mode === 'CAMERA') {
-                // Chuyển sang Touch
-                if(camera) { 
-                    // Tắt thủ công stream để tiết kiệm pin
-                    const stream = videoElement.srcObject;
-                    if(stream) stream.getTracks().forEach(t=>t.stop());
-                }
-                controlState.mode = 'TOUCH';
-                statusBar.innerText = "Chế độ: CẢM ỨNG (Chạm để chơi)";
-                statusBar.style.color = "#00aaff";
-            } else {
-                // Chuyển sang Camera
-                startCameraAI();
-                statusBar.style.color = "#00ff88";
-            }
-        }
-
-        // --- VÒNG LẶP CHÍNH (ANIMATION LOOP) ---
+        // --- ANIMATION LOOP ---
         function animate() {
-            // Xóa canvas
-            ctx.fillStyle = "#050510";
+            ctx.fillStyle = "#000000";
             ctx.fillRect(0, 0, width, height);
 
-            // Cập nhật góc xoay
-            globalRotation += controlState.rotationSpeed;
+            rotation += speed;
 
-            // Vẽ Vũ trụ
             ctx.save();
             ctx.translate(width/2, height/2);
-            ctx.rotate(globalRotation);
-            
-            stars.forEach((s, i) => {
-                s.update();
-                // Highlight nếu đang hover
-                if (i === hoveredStarIndex) {
-                    ctx.save();
-                    ctx.shadowBlur = 20; ctx.shadowColor = "#00ff88"; ctx.fillStyle = "#fff";
-                    ctx.beginPath(); ctx.arc(s.x, s.y, s.size*2, 0, Math.PI*2); ctx.fill();
-                    ctx.restore();
-                } else {
-                    s.draw(ctx);
-                }
-            });
+            ctx.rotate(rotation);
+            stars.forEach(s => s.draw());
             ctx.restore();
 
-            // Vẽ Con trỏ (Cursor)
-            if (controlState.active || controlState.mode === 'TOUCH') {
-                checkHover(); // Kiểm tra va chạm
-
+            // Vẽ con trỏ tay
+            if (hand.active) {
                 ctx.beginPath();
-                ctx.arc(controlState.x, controlState.y, 20, 0, Math.PI*2);
-                ctx.lineWidth = 2;
+                ctx.arc(hand.x, hand.y, 20, 0, Math.PI*2);
+                ctx.strokeStyle = "#00ff88";
+                ctx.lineWidth = 3;
+                ctx.stroke();
                 
-                if (controlState.mode === 'CAMERA') {
-                    ctx.strokeStyle = "#00ff88"; 
-                    ctx.fillStyle = "rgba(0,255,136,0.1)";
-                } else {
-                    ctx.strokeStyle = "#00aaff"; // Màu xanh dương cho Touch
-                    ctx.fillStyle = "rgba(0,170,255,0.1)";
-                }
-                
-                if (hoveredStarIndex !== -1) {
-                    ctx.fillStyle = "rgba(255,255,255,0.3)"; // Sáng lên khi trúng sao
-                    ctx.lineWidth = 4;
-                }
-
-                ctx.fill(); ctx.stroke();
+                // Tâm
+                ctx.beginPath();
+                ctx.arc(hand.x, hand.y, 5, 0, Math.PI*2);
+                ctx.fillStyle = "#00ff88";
+                ctx.fill();
             }
 
             requestAnimationFrame(animate);
         }
 
-        // --- KHỞI CHẠY ---
-        window.onload = function() {
-            init();
-            animate(); // QUAN TRỌNG: Gọi hàm này để bắt đầu vẽ ngay lập tức!
-            
-            // Thử khởi động camera sau 1s
-            setTimeout(startCameraAI, 1000);
-        };
-        
-        window.addEventListener('resize', init);
-
+        window.addEventListener('resize', initStars);
     </script>
 </body>
 </html>
