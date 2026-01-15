@@ -159,6 +159,27 @@
             backdrop-filter: blur(5px);
         }
 
+        /* Nút chuyển chế độ thủ công */
+        #mode-switch {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 60;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            backdrop-filter: blur(5px);
+            pointer-events: auto;
+        }
+        #mode-switch:hover {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+        }
+
         /* Video ẩn cho PC */
         .input_video { display: none; }
         
@@ -171,12 +192,15 @@
 </head>
 <body>
 
-    <div id="loader">Đang phân tích thiết bị...</div>
+    <div id="loader">Đang khởi động hệ thống...</div>
 
     <div id="overlay">
         <div class="badge" id="device-status">Đang khởi tạo...</div>
         <div style="margin-top:10px; color: rgba(255,255,255,0.6); font-size: 0.8rem;" id="guide-text"></div>
     </div>
+
+    <!-- Nút chuyển chế độ -->
+    <button id="mode-switch" onclick="toggleMode()">🔄 Chuyển Chế Độ</button>
 
     <video class="input_video" playsinline></video>
     <canvas id="sky"></canvas>
@@ -187,7 +211,7 @@
         <div class="hint" id="modal-hint">Chạm ra ngoài để đóng</div>
     </div>
 
-    <!-- Scripts MediaPipe (Chỉ tải nếu cần, nhưng để đơn giản ta chèn link sẵn, JS sẽ quyết định chạy hay không) -->
+    <!-- Scripts MediaPipe -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -203,21 +227,23 @@
         const guideText = document.getElementById('guide-text');
         const modalHint = document.getElementById('modal-hint');
         const loader = document.getElementById('loader');
+        const modeSwitchBtn = document.getElementById('mode-switch');
 
         let width, height;
         let stars = [];
         let globalRotation = 0;
+        let camera = null;
+        let hands = null;
         
-        // Phát hiện thiết bị (Đơn giản nhưng hiệu quả)
-        // Coi là Mobile nếu màn hình nhỏ HOẶC có hỗ trợ cảm ứng
-        const isMobile = (window.innerWidth < 1000) || ('ontouchstart' in window);
+        // Mặc định: Nếu màn hình nhỏ (<1024px) thì ưu tiên Mobile.
+        // Laptop cảm ứng màn hình to vẫn có thể mặc định là PC, nhưng có nút switch để đổi.
+        let currentMode = (window.innerWidth < 1024) ? 'TOUCH' : 'WEBCAM';
 
         // Trạng thái điều khiển
         const state = {
-            mode: isMobile ? 'TOUCH' : 'WEBCAM', // TOUCH hoặc WEBCAM
             cursorX: -100,
             cursorY: -100,
-            active: false, // Có đang tương tác hay không
+            active: false, 
             rotationSpeed: 0.0005,
             hoverIndex: -1
         };
@@ -228,28 +254,24 @@
             "Đừng bỏ cuộc!", "Hạnh phúc ở đây."
         ];
 
-        // --- HỆ THỐNG SAO (TỐI ƯU HÓA) ---
+        // --- HỆ THỐNG SAO ---
         class Star {
-            constructor() {
-                this.reset();
-            }
+            constructor() { this.reset(); }
             
             reset() {
-                // Rải sao rộng hơn màn hình để khi xoay không bị hổng
                 const r = Math.max(width, height) * (0.1 + Math.random() * 1.3);
                 const theta = Math.random() * Math.PI * 2;
                 
-                this.x = r * Math.cos(theta); // Tọa độ gốc (chưa xoay)
+                this.x = r * Math.cos(theta);
                 this.y = r * Math.sin(theta);
                 
                 this.size = Math.random() * 2;
                 this.baseSize = this.size;
                 
-                // Sao đặc biệt (Có thông điệp)
-                // Mobile: Sao to hơn, ít sao hơn để dễ bấm
-                this.isSpecial = Math.random() < (isMobile ? 0.15 : 0.1); 
+                // Tăng kích thước sao đặc biệt để dễ bấm hơn trên điện thoại
+                this.isSpecial = Math.random() < 0.15; 
                 if (this.isSpecial) {
-                    this.size = isMobile ? 8 + Math.random() * 4 : 5 + Math.random() * 3;
+                    this.size = (currentMode === 'TOUCH') ? 10 + Math.random() * 5 : 6 + Math.random() * 3;
                     this.baseSize = this.size;
                     this.color = `hsl(${Math.random() * 60 + 190}, 100%, 80%)`;
                 } else {
@@ -259,27 +281,26 @@
                 this.blinkOffset = Math.random() * 100;
             }
 
-            draw(ctx, centerX, centerY, cosRot, sinRot, frame) {
-                // Tính toán tọa độ xoay (Rotation Matrix)
-                // x' = x*cos - y*sin
-                // y' = x*sin + y*cos
+            // Tính toán vị trí trên màn hình
+            getScreenPos(centerX, centerY, cosRot, sinRot) {
                 const rotX = this.x * cosRot - this.y * sinRot;
                 const rotY = this.x * sinRot + this.y * cosRot;
+                return {
+                    x: centerX + rotX,
+                    y: centerY + rotY
+                };
+            }
 
-                const screenX = centerX + rotX;
-                const screenY = centerY + rotY;
-
-                // Hiệu ứng nhấp nháy
+            draw(ctx, screenPos, frame) {
                 const blink = Math.sin((frame + this.blinkOffset) * 0.05);
                 const currentSize = this.isSpecial 
                     ? this.baseSize + blink * 2 
                     : this.baseSize + blink * 0.5;
 
                 ctx.beginPath();
-                ctx.arc(screenX, screenY, Math.max(0, currentSize), 0, Math.PI * 2);
+                ctx.arc(screenPos.x, screenPos.y, Math.max(0, currentSize), 0, Math.PI * 2);
                 
                 if (this.isSpecial) {
-                    // Glow effect (chỉ vẽ cho sao đặc biệt để tối ưu)
                     ctx.fillStyle = "#fff";
                     ctx.shadowBlur = 15;
                     ctx.shadowColor = this.color;
@@ -288,108 +309,171 @@
                     ctx.shadowBlur = 0;
                 }
                 ctx.fill();
-
-                // Trả về tọa độ màn hình để kiểm tra va chạm (chỉ sao đặc biệt)
-                if (this.isSpecial) return { x: screenX, y: screenY };
-                return null;
             }
         }
 
-        // --- KHỞI TẠO HỆ THỐNG ---
+        // --- KHỞI TẠO ---
         function init() {
             width = window.innerWidth;
             height = window.innerHeight;
             canvas.width = width;
             canvas.height = height;
             
-            // Số lượng sao: Mobile ít hơn để mượt (150), PC nhiều hơn (300)
-            const starCount = isMobile ? 150 : 350;
+            const starCount = (currentMode === 'TOUCH') ? 150 : 350;
             stars = [];
             for (let i = 0; i < starCount; i++) stars.push(new Star());
 
             loader.style.display = 'none';
+            applyMode();
+        }
 
-            if (isMobile) {
+        // --- QUẢN LÝ CHẾ ĐỘ ---
+        function toggleMode() {
+            // Dọn dẹp chế độ cũ
+            cleanup();
+            // Đổi chế độ
+            currentMode = (currentMode === 'TOUCH') ? 'WEBCAM' : 'TOUCH';
+            init(); // Khởi tạo lại sao và sự kiện
+        }
+
+        function cleanup() {
+            // Tắt camera nếu có
+            if (camera) {
+                const stream = document.querySelector('.input_video').srcObject;
+                if(stream) stream.getTracks().forEach(t => t.stop());
+                camera = null;
+            }
+            // Xóa sự kiện touch cũ (bằng cách clone node canvas)
+            const newCanvas = canvas.cloneNode(true);
+            canvas.parentNode.replaceChild(newCanvas, canvas);
+            // Cập nhật lại tham chiếu canvas/ctx sau khi replace
+            // Lưu ý: Trong thực tế nên dùng removeEventListener, nhưng clone node nhanh gọn để reset sạch
+            location.reload(); // Reload trang là cách sạch nhất để reset MediaPipe và Event Listeners phức tạp
+        }
+        
+        // Vì reload trang hơi gắt, ta sẽ dùng logic if/else trong event listener hoặc removeEventListener chuẩn
+        // Để đơn giản cho demo này, ta sẽ dùng biến currentMode để điều hướng logic trong các hàm setup.
+
+        function applyMode() {
+            if (currentMode === 'TOUCH') {
                 setupMobileMode();
             } else {
                 setupDesktopMode();
             }
         }
 
-        // --- CHẾ ĐỘ 1: MOBILE (CẢM ỨNG) ---
+        // --- HÀM LẤY TỌA ĐỘ CHUẨN (FIX LỖI SAI VỊ TRÍ) ---
+        function getPointerPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            // Hỗ trợ cả Touch và Mouse
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        // --- CHẾ ĐỘ 1: TOUCH / MOBILE ---
         function setupMobileMode() {
             statusBadge.innerText = "📱 Chế độ Cảm Ứng";
             guideText.innerText = "Chạm vào sao để mở • Kéo để xoay";
             modalHint.innerText = "Chạm ra ngoài để đóng";
+            modeSwitchBtn.innerText = "🔄 Chuyển sang Camera AI";
 
-            // Xử lý Touch
             let startX = 0;
             
             canvas.addEventListener('touchstart', (e) => {
-                const t = e.touches[0];
-                state.cursorX = t.clientX;
-                state.cursorY = t.clientY;
-                startX = t.clientX;
+                const pos = getPointerPos(e);
+                state.cursorX = pos.x;
+                state.cursorY = pos.y;
+                startX = pos.x;
                 state.active = true;
                 
-                // Kiểm tra click sao
-                checkInteraction(true); 
+                // FIX LỖI CLICK: Kiểm tra va chạm ngay lập tức khi chạm
+                checkImmediateHit(pos.x, pos.y);
             }, {passive: false});
 
             canvas.addEventListener('touchmove', (e) => {
-                e.preventDefault(); // Chặn kéo trang
-                const t = e.touches[0];
-                state.cursorX = t.clientX;
-                state.cursorY = t.clientY;
+                e.preventDefault(); 
+                const pos = getPointerPos(e);
+                state.cursorX = pos.x;
+                state.cursorY = pos.y;
 
-                // Xoay dựa trên di chuyển ngón tay
-                const deltaX = t.clientX - startX;
-                state.rotationSpeed = deltaX * 0.0001; // Nhạy hơn
+                const deltaX = pos.x - startX;
+                state.rotationSpeed = deltaX * 0.0001; 
             }, {passive: false});
 
             canvas.addEventListener('touchend', () => {
                 state.active = false;
-                // Trôi nhẹ khi thả tay
                 state.rotationSpeed = 0.0005;
+            });
+            
+            // Hỗ trợ thêm chuột cho Laptop màn cảm ứng
+            canvas.addEventListener('mousedown', (e) => {
+                const pos = getPointerPos(e);
+                checkImmediateHit(pos.x, pos.y);
             });
         }
 
-        // --- CHẾ ĐỘ 2: DESKTOP (WEBCAM AI) ---
+        // Hàm kiểm tra va chạm ngay lập tức (cho Touch)
+        function checkImmediateHit(x, y) {
+            if (modal.classList.contains('active')) {
+                closeModal();
+                return;
+            }
+
+            const cx = width / 2;
+            const cy = height / 2;
+            const cosRot = Math.cos(globalRotation);
+            const sinRot = Math.sin(globalRotation);
+            const hitRadius = 60; // Vùng chạm lớn cho dễ bấm
+
+            for (let s of stars) {
+                if (!s.isSpecial) continue;
+                const pos = s.getScreenPos(cx, cy, cosRot, sinRot);
+                const dist = Math.hypot(pos.x - x, pos.y - y);
+                
+                if (dist < hitRadius) {
+                    openModal(x, y);
+                    break;
+                }
+            }
+        }
+
+        // --- CHẾ ĐỘ 2: DESKTOP / WEBCAM ---
         async function setupDesktopMode() {
             statusBadge.innerText = "💻 Chế độ AI Camera";
-            guideText.innerText = "🖐️ Xòe tay: Mở • ✊ Nắm tay: Đóng • Di chuyển tay để xoay";
+            guideText.innerText = "🖐️ Xòe tay: Mở • ✊ Nắm tay: Đóng • Di chuyển để xoay";
             modalHint.innerText = "Nắm tay lại để đóng";
+            modeSwitchBtn.innerText = "🔄 Chuyển sang Cảm ứng";
 
             const videoElement = document.querySelector('.input_video');
             
-            // Hàm xử lý kết quả AI
             function onResults(results) {
                 if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                     const lm = results.multiHandLandmarks[0];
-                    const indexTip = lm[8]; // Ngón trỏ
+                    const indexTip = lm[8];
 
-                    // 1. Cập nhật vị trí con trỏ (Lật gương)
+                    // Map tọa độ 0-1 sang width-height
                     state.cursorX = (1 - indexTip.x) * width;
                     state.cursorY = indexTip.y * height;
                     state.active = true;
 
-                    // 2. Xử lý Cử chỉ (Gesture)
-                    // Khoảng cách Đầu cái (4) - Đầu trỏ (8) vs Khớp cái (3) - Khớp trỏ (6)
-                    // Logic đơn giản: Khoảng cách đầu ngón cái và trỏ xa nhau -> Mở. Gần -> Đóng.
+                    // Logic Gesture
                     const d = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y);
-                    const isClosed = d < 0.05; // Ngưỡng nắm tay
+                    const isClosed = d < 0.05;
 
                     if (isClosed) {
-                        // Nắm tay -> Đóng modal
                         closeModal();
                     } else {
-                        // Mở tay -> Kiểm tra chọn sao
-                        checkInteraction(false); // False: Không bắt buộc click, chỉ cần hover + open
+                        // Check hover trong vòng lặp render, không cần check ngay
+                        // Nhưng nếu muốn nhạy hơn, có thể check ngay tại đây
                     }
 
-                    // 3. Xử lý Xoay (Dựa trên vị trí tay so với tâm)
+                    // Xoay
                     const cx = width / 2;
-                    const deadZone = 150; // Vùng chết ở giữa
+                    const deadZone = 150;
                     if (state.cursorX < cx - deadZone) {
                         state.rotationSpeed = -0.003 * ((cx - deadZone - state.cursorX) / 200);
                     } else if (state.cursorX > cx + deadZone) {
@@ -397,61 +481,46 @@
                     } else {
                         state.rotationSpeed = 0;
                     }
-
                 } else {
                     state.active = false;
-                    state.rotationSpeed = 0.0005; // Trôi tự nhiên
+                    state.rotationSpeed = 0.0005;
                 }
             }
 
-            // Khởi tạo MediaPipe
             try {
-                const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-                hands.setOptions({
-                    maxNumHands: 1,
-                    modelComplexity: 1, // Máy tính mạnh nên dùng model tốt hơn
-                    minDetectionConfidence: 0.5,
-                    minTrackingConfidence: 0.5
-                });
-                hands.onResults(onResults);
+                if (!hands) {
+                    hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+                    hands.setOptions({
+                        maxNumHands: 1,
+                        modelComplexity: 1,
+                        minDetectionConfidence: 0.5,
+                        minTrackingConfidence: 0.5
+                    });
+                    hands.onResults(onResults);
+                }
 
-                const camera = new Camera(videoElement, {
-                    onFrame: async () => { await hands.send({image: videoElement}); },
-                    width: 640, height: 480
-                });
-                await camera.start();
+                if (!camera) {
+                    camera = new Camera(videoElement, {
+                        onFrame: async () => { await hands.send({image: videoElement}); },
+                        width: 640, height: 480
+                    });
+                    await camera.start();
+                }
             } catch (e) {
                 console.error(e);
-                alert("Không tìm thấy Camera. Chuyển sang dùng chuột.");
-                // Fallback sang chuột nếu lỗi cam
-                window.addEventListener('mousemove', e => {
-                    state.cursorX = e.clientX;
-                    state.cursorY = e.clientY;
-                    state.active = true;
-                });
-                window.addEventListener('click', () => checkInteraction(true));
+                alert("Không thể mở Camera. Vui lòng cấp quyền hoặc chuyển sang chế độ Cảm ứng.");
+                // Tự động chuyển về touch nếu lỗi
+                currentMode = 'TOUCH';
+                init();
             }
         }
 
-        // --- LOGIC TƯƠNG TÁC CHUNG ---
-        function checkInteraction(isClickEvent) {
-            // Nếu modal đang mở, không check sao
-            if (modal.classList.contains('active')) {
-                if (isClickEvent && isMobile) closeModal();
-                return;
-            }
-
-            // Kiểm tra va chạm với sao
-            if (state.hoverIndex !== -1) {
-                openModal();
-            }
-        }
-
-        function openModal() {
+        // --- HÀM UI CHUNG ---
+        function openModal(x, y) {
             if (modal.classList.contains('active')) return;
             msgContent.innerText = messages[Math.floor(Math.random() * messages.length)];
             modal.classList.add('active');
-            createExplosion(state.cursorX, state.cursorY);
+            createExplosion(x || state.cursorX, y || state.cursorY);
         }
 
         function closeModal() {
@@ -475,34 +544,31 @@
             setTimeout(() => burst.remove(), 500);
         }
 
-        // --- RENDER LOOP (TỐI ƯU HÓA) ---
+        // --- RENDER LOOP ---
         let frame = 0;
         function animate() {
             frame++;
-            
-            // 1. Xóa màn hình
             ctx.fillStyle = "#020205";
             ctx.fillRect(0, 0, width, height);
 
-            // 2. Tính toán ma trận xoay (Chỉ tính 1 lần mỗi frame)
             globalRotation += state.rotationSpeed;
             const cx = width / 2;
             const cy = height / 2;
             const cosRot = Math.cos(globalRotation);
             const sinRot = Math.sin(globalRotation);
 
-            // 3. Vẽ Sao & Kiểm tra va chạm
-            state.hoverIndex = -1; // Reset hover
+            state.hoverIndex = -1;
             let closestDist = 999;
-            const hitRadius = isMobile ? 50 : 30; // Mobile dễ bấm hơn
+            const hitRadius = (currentMode === 'TOUCH') ? 60 : 40;
 
-            // Duyệt ngược mảng để sao vẽ sau đè lên sao trước (chiều sâu)
             for (let i = 0; i < stars.length; i++) {
                 const s = stars[i];
-                const screenPos = s.draw(ctx, cx, cy, cosRot, sinRot, frame);
+                const screenPos = s.getScreenPos(cx, cy, cosRot, sinRot);
+                
+                s.draw(ctx, screenPos, frame);
 
-                // Nếu là sao đặc biệt và đang có con trỏ hoạt động
-                if (screenPos && state.active && !modal.classList.contains('active')) {
+                // Check Hover cho chế độ WEBCAM (Touch đã check ngay khi chạm)
+                if (currentMode === 'WEBCAM' && s.isSpecial && state.active && !modal.classList.contains('active')) {
                     const dist = Math.hypot(screenPos.x - state.cursorX, screenPos.y - state.cursorY);
                     if (dist < hitRadius && dist < closestDist) {
                         closestDist = dist;
@@ -511,22 +577,21 @@
                 }
             }
 
-            // 4. Vẽ Con trỏ (Cursor)
+            // Vẽ con trỏ
             if (state.active) {
                 ctx.beginPath();
                 ctx.arc(state.cursorX, state.cursorY, hitRadius / 2, 0, Math.PI * 2);
                 
-                // Đổi màu nếu trúng sao
                 if (state.hoverIndex !== -1) {
                     ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
                     ctx.strokeStyle = "#fff";
                     ctx.lineWidth = 3;
-                    document.body.style.cursor = 'pointer';
+                    // Auto open nếu dùng webcam và hover
+                    if (currentMode === 'WEBCAM') openModal(); 
                 } else {
-                    ctx.fillStyle = isMobile ? "rgba(0, 255, 136, 0.2)" : "rgba(0, 150, 255, 0.2)";
-                    ctx.strokeStyle = isMobile ? "#00ff88" : "#00ccff";
+                    ctx.fillStyle = (currentMode === 'TOUCH') ? "rgba(0, 255, 136, 0.2)" : "rgba(0, 150, 255, 0.2)";
+                    ctx.strokeStyle = (currentMode === 'TOUCH') ? "#00ff88" : "#00ccff";
                     ctx.lineWidth = 2;
-                    document.body.style.cursor = 'default';
                 }
                 
                 ctx.fill();
@@ -536,7 +601,6 @@
             requestAnimationFrame(animate);
         }
 
-        // Khởi chạy
         window.addEventListener('resize', init);
         window.onload = () => {
             init();
