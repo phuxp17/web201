@@ -1,88 +1,1358 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="h-full bg-slate-50 text-slate-800">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code free</title>
+    <title>Vòng Quay May Mắn</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Lexend -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            color: #f8fafc;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
+            font-family: 'Lexend', sans-serif;
         }
-
-        .container {
-            background: rgba(30, 41, 59, 0.9);
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
-            text-align: center;
-            max-width: 320px;
-            width: 100%;
-            border: 1px solid rgba(148, 163, 184, 0.3);
+        /* Custom scrollbar for light theme */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
-
-        input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #64748b;
-            border-radius: 6px;
-            font-size: 14px;
-            margin-bottom: 15px;
-            outline: none;
-            background: #0f172a;
-            color: #f8fafc;
-            transition: border 0.2s;
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
         }
-
-        input::placeholder {
-            color: #94a3b8;
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
         }
-
-        input:focus {
-            border-color: #3b82f6;
-        }
-
-        button {
-            background-color: #3b82f6;
-            color: white;
-            padding: 10px 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.2s, transform 0.1s;
-        }
-
-        button:hover {
-            background-color: #2563eb;
-            transform: scale(1.05);
-        }
-
-        img {
-            display: block;
-            margin: 15px auto 0;
-            border-radius: 8px;
-            background: white;
-            padding: 5px;
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <input id="qr" placeholder="Enter url">
-        <img alt="QR Code" id="qrimg">
-        <button 
-            onclick="qrimg.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data='+encodeURIComponent(qr.value)">
-            Generate
-        </button>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-10 px-4 py-3 sm:px-6 shadow-sm">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-500/30 animate-pulse">
+                    <!-- Custom SVG Wheel Icon -->
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                        LUCKY WHEEL PRO
+                    </h1>
+                    <p class="text-xs text-slate-500">Tạo nhiều vòng quay - Tuỳ chỉnh xác suất trực quan</p>
+                </div>
+            </div>
+            
+            <!-- Quick Active Wheel Switcher & Config -->
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <label for="wheel-select" class="text-xs font-semibold text-slate-500 whitespace-nowrap">Đang chọn:</label>
+                <select id="wheel-select" class="bg-slate-100 border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 pr-8 focus:outline-none cursor-pointer max-w-[200px] truncate" onchange="switchWheel(this.value)">
+                    <!-- Options injected by JS -->
+                </select>
+                <button onclick="openNewWheelModal()" class="p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-all duration-200 shadow-md flex items-center gap-1 text-sm font-medium">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    <span class="hidden md:inline">Mới</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- COLUMN 1: The Interactive Wheel Panel (Left) -->
+        <section class="lg:col-span-7 flex flex-col items-center justify-center bg-white rounded-2xl border border-slate-200 p-6 shadow-md relative min-h-[500px]">
+            
+            <!-- Target Pointer at the top -->
+            <div class="absolute top-[32px] z-20 flex flex-col items-center">
+                <!-- Glowing Pointer Arrow pointing down -->
+                <div class="w-0 h-0 border-l-[18px] border-l-transparent border-r-[18px] border-r-transparent border-t-[28px] border-t-rose-500 drop-shadow-[0_4px_10px_rgba(244,63,94,0.4)]"></div>
+                <div class="w-3 h-3 bg-rose-500 rounded-full -mt-1 shadow-md border-2 border-white"></div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="relative w-full aspect-square max-w-[420px] flex items-center justify-center p-4">
+                <canvas id="wheel-canvas" class="w-full h-full rounded-full drop-shadow-[0_15px_30px_rgba(99,102,241,0.15)] transition-transform duration-100 ease-out"></canvas>
+                
+                <!-- Inner Glowing Core Pin -->
+                <div class="absolute w-14 h-14 bg-gradient-to-tr from-white to-slate-100 rounded-full border-4 border-slate-200 flex items-center justify-center shadow-lg z-10">
+                    <div class="w-4 h-4 bg-indigo-500 rounded-full animate-ping opacity-75"></div>
+                    <div class="absolute w-5 h-5 bg-indigo-600 rounded-full"></div>
+                </div>
+            </div>
+
+            <!-- Wheel Controller (Spin Buttons) -->
+            <div class="w-full max-w-[400px] mt-6 flex flex-col gap-4">
+                <div class="flex gap-3">
+                    <button id="spin-button" onclick="spin()" class="flex-1 py-4 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold text-lg rounded-xl shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2 tracking-wide uppercase">
+                        Quay Ngay 🚀
+                    </button>
+                </div>
+
+                <!-- Custom Spin Duration & Sound Controls -->
+                <div class="grid grid-cols-2 gap-4 bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="spin-duration" class="text-xs font-semibold text-slate-500">Thời gian quay</label>
+                            <span id="duration-val" class="text-xs font-bold text-indigo-600 bg-indigo-55 px-1.5 py-0.5 rounded">5 giây</span>
+                        </div>
+                        <input type="range" id="spin-duration" min="1" max="60" value="5" class="w-full accent-indigo-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer" oninput="updateDurationLabel(this.value)">
+                    </div>
+
+                    <div class="flex flex-col gap-2 justify-center pl-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-500">Âm thanh click</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="sound-toggle" checked class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-500" title="Tự động loại bỏ ô trúng giải sau khi quay xong">Xóa ô khi trúng</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="remove-on-win-toggle" onchange="toggleRemoveOnWin(this.checked)" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Countdown Timer Card -->
+                <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col gap-3">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                        <span class="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                            ⏱️ Bộ đếm ngược hẹn giờ
+                        </span>
+                        <label class="relative inline-flex items-center cursor-pointer" title="Tự động kích hoạt vòng quay khi hết thời gian đếm ngược">
+                            <input type="checkbox" id="timer-auto-spin" class="sr-only peer" onchange="toggleTimerAutoSpin(this.checked)">
+                            <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                            <span class="text-[10px] font-semibold text-slate-500 ml-1.5 whitespace-nowrap">Tự động quay</span>
+                        </label>
+                    </div>
+
+                    <!-- Main Timer Control & Display -->
+                    <div class="flex items-center justify-between gap-4">
+                        <!-- Left: Large Timer Display / Edit inputs -->
+                        <div class="flex-1 bg-white border border-slate-200 rounded-xl py-2 px-3 shadow-inner flex items-center justify-center min-h-[56px] relative overflow-hidden">
+                            <!-- Stopped/Editable State: Inputs -->
+                            <div id="timer-edit-inputs" class="flex items-center gap-1">
+                                <input type="number" id="timer-min" min="0" max="99" value="05" class="w-12 text-center font-mono text-xl font-bold bg-slate-50 border border-slate-200 rounded p-1 text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500" placeholder="00" onchange="validateTimerInputs()" oninput="validateTimerInputs()">
+                                <span class="font-bold text-slate-400">:</span>
+                                <input type="number" id="timer-sec" min="0" max="59" value="00" class="w-12 text-center font-mono text-xl font-bold bg-slate-50 border border-slate-200 rounded p-1 text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500" placeholder="00" onchange="validateTimerInputs()" oninput="validateTimerInputs()">
+                            </div>
+
+                            <!-- Running State: Animated Text -->
+                            <div id="timer-running-display" class="hidden text-2xl font-black font-mono tracking-widest text-indigo-600 transition-all duration-300 flex items-center gap-0.5 animate-pulse">
+                                <span id="timer-run-min">05</span>:<span id="timer-run-sec">00</span>
+                            </div>
+                        </div>
+
+                        <!-- Right: Preset Quick Adjustment Buttons -->
+                        <div class="flex flex-col gap-1.5 w-[140px]" id="timer-quick-adjusts">
+                            <div class="flex gap-1.5">
+                                <button onclick="adjustTimerTime(60)" class="flex-1 py-1 px-1 bg-white hover:bg-slate-100 text-[10px] font-bold text-slate-600 border border-slate-200 rounded-md transition shadow-sm active:scale-95">+1p</button>
+                                <button onclick="adjustTimerTime(10)" class="flex-1 py-1 px-1 bg-white hover:bg-slate-100 text-[10px] font-bold text-slate-600 border border-slate-200 rounded-md transition shadow-sm active:scale-95">+10s</button>
+                            </div>
+                            <div class="flex gap-1.5">
+                                <button onclick="adjustTimerTime(-60)" class="flex-1 py-1 px-1 bg-white hover:bg-slate-100 text-[10px] font-bold text-slate-600 border border-slate-200 rounded-md transition shadow-sm active:scale-95">-1p</button>
+                                <button onclick="adjustTimerTime(-10)" class="flex-1 py-1 px-1 bg-white hover:bg-slate-100 text-[10px] font-bold text-slate-600 border border-slate-200 rounded-md transition shadow-sm active:scale-95">-10s</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Action Buttons -->
+                    <div class="flex gap-2">
+                        <button id="timer-start-button" onclick="toggleTimer()" class="flex-1 py-2 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-md shadow-indigo-600/10 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-1.5 uppercase tracking-wider">
+                            <span id="timer-start-icon">▶️</span>
+                            <span id="timer-start-text">Bắt đầu</span>
+                        </button>
+                        <button onclick="resetTimer()" class="py-2 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold text-xs rounded-xl active:scale-[0.98] transition-all duration-150 uppercase tracking-wider">
+                            Đặt lại
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- COLUMN 2: Configuration Panel (Right) -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+            
+            <!-- Wheel Manager Area -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-md">
+                <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <span class="text-indigo-600">⚙️</span> Cấu hình ô & Xác suất
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="shuffleColors()" class="text-xs font-medium text-slate-600 hover:text-indigo-600 px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded border border-slate-200 transition">🎨 Đổi màu</button>
+                        <button onclick="clearSegments()" class="text-xs font-medium text-rose-600 hover:text-rose-700 px-2 py-1 bg-rose-50 hover:bg-rose-100 rounded transition">🗑️ Xoá sạch</button>
+                    </div>
+                </div>
+
+                <!-- Live Add Segment Form -->
+                <form id="add-segment-form" onsubmit="addSegment(event)" class="grid grid-cols-12 gap-2 mb-6">
+                    <div class="col-span-5 relative">
+                        <input type="text" id="seg-name" placeholder="Tên ô (VD: Quà 1)" required class="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-400 text-slate-800">
+                    </div>
+                    <div class="col-span-3">
+                        <input type="number" id="seg-weight" placeholder="Trọng số" value="1" min="1" step="any" required class="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none text-slate-800" title="Trọng số càng cao, cơ hội trúng càng lớn">
+                    </div>
+                    <div class="col-span-2">
+                        <input type="color" id="seg-color" value="#6366f1" class="w-full h-[38px] bg-slate-50 border border-slate-200 rounded-lg p-1 cursor-pointer">
+                    </div>
+                    <button type="submit" class="col-span-2 bg-indigo-600 hover:bg-indigo-500 transition text-white rounded-lg flex items-center justify-center font-bold text-sm shadow">
+                        +
+                    </button>
+                </form>
+
+                <!-- Segments List Table -->
+                <div class="overflow-y-auto max-h-[300px] border border-slate-200 rounded-lg">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-50 sticky top-0 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
+                            <tr>
+                                <th class="p-3 w-12 text-center">Màu</th>
+                                <th class="p-3">Tên ô</th>
+                                <th class="p-3 w-20 text-center">Trọng số</th>
+                                <th class="p-3 w-24 text-right">Xác suất (%)</th>
+                                <th class="p-3 w-12 text-center"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="segments-table-body" class="divide-y divide-slate-100 bg-white">
+                            <!-- Rows injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty state fallback -->
+                <div id="empty-state" class="hidden py-8 text-center text-slate-400 text-sm">
+                    ⚠️ Vòng quay chưa có ô nào. Hãy thêm ô ở trên để bắt đầu!
+                </div>
+            </div>
+
+            <!-- List of All Custom Wheels Manager -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-md">
+                <h3 class="text-sm font-bold text-slate-700 mb-3 uppercase tracking-wider flex items-center gap-1.5">
+                    📂 Danh sách vòng quay hiện có
+                </h3>
+                <div id="wheels-list" class="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1">
+                    <!-- Custom Wheels items list injected here -->
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+        Phát triển độc quyền ứng dụng Lucky Wheel • Không sử dụng Cookies bên thứ ba • 2026
+    </footer>
+
+    <!-- MODAL: Celebration/Winner (Custom Popup instead of alert) -->
+    <div id="winner-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
+        <!-- Confetti Animation Canvas Behind -->
+        <canvas id="confetti-canvas" class="absolute inset-0 pointer-events-none w-full h-full"></canvas>
+
+        <div class="bg-white border border-indigo-100 rounded-3xl max-w-md w-full p-8 text-center shadow-2xl relative transform scale-90 transition-transform duration-300 z-10">
+            <!-- Sparkles/Confetti Graphic Icon -->
+            <div class="w-20 h-20 mx-auto mb-4 bg-indigo-50 rounded-full flex items-center justify-center text-4xl animate-bounce shadow-inner">
+                🎉
+            </div>
+            
+            <h3 class="text-xs font-bold tracking-widest text-indigo-600 uppercase mb-1">KẾT QUẢ VÒNG QUAY</h3>
+            <h2 class="text-3xl font-extrabold text-slate-900 mb-4" id="winner-modal-title">XIN CHÚC MỪNG!</h2>
+            
+            <div class="inline-block px-6 py-4 rounded-2xl bg-slate-50 border border-slate-200/60 shadow-sm mb-6 max-w-xs mx-auto">
+                <span id="winner-modal-name" class="text-2xl font-black block tracking-tight truncate break-all">Tên Người Trúng</span>
+                <span id="winner-modal-prob" class="text-xs text-indigo-600 block mt-1">Xác suất trúng: 0%</span>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <button onclick="closeWinnerModal()" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all duration-150 active:scale-95">
+                    Tuyệt vời! Tiếp tục quay 💫
+                </button>
+            </div>
+        </div>
     </div>
+
+    <!-- MODAL: Create New Wheel -->
+    <div id="new-wheel-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden">
+        <div class="bg-white border border-slate-250 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+            <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                🆕 Tạo vòng quay mới
+            </h3>
+            <div class="flex flex-col gap-4">
+                <div>
+                    <label for="new-wheel-name" class="block text-xs text-slate-500 font-semibold mb-1">Tên vòng quay:</label>
+                    <input type="text" id="new-wheel-name" placeholder="VD: Chia nhóm việc nhà..." class="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none text-slate-800">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 font-semibold mb-2">Bắt đầu từ danh sách mẫu:</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setTemplateAndCreate('yesno')" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 text-left transition">
+                            👍 Có / Không
+                        </button>
+                        <button onclick="setTemplateAndCreate('numbers')" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 text-left transition">
+                            🎲 Số ngẫu nhiên (1-10)
+                        </button>
+                        <button onclick="setTemplateAndCreate('empty')" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg text-xs font-semibold text-indigo-600 text-left col-span-2 text-center transition">
+                            ✨ Vòng quay trống (Tự thêm ô)
+                        </button>
+                    </div>
+                </div>
+                <div class="flex gap-2 justify-end mt-2 pt-3 border-t border-slate-100">
+                    <button onclick="closeNewWheelModal()" class="py-2 px-4 text-xs font-bold text-slate-500 hover:text-slate-700 transition">Huỷ bỏ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT SECTION -->
+    <script>
+        // Preset Wheel Templates
+        const templates = {
+            yesno: [
+                { name: 'Có', weight: 1, color: '#10b981' },
+                { name: 'Không', weight: 1, color: '#ef4444' },
+                { name: 'Suy nghĩ thêm', weight: 0.5, color: '#f59e0b' },
+                { name: 'Hỏi bạn bè', weight: 0.5, color: '#3b82f6' }
+            ],
+            numbers: [
+                { name: 'Số 1', weight: 1, color: '#ef4444' },
+                { name: 'Số 2', weight: 1, color: '#f97316' },
+                { name: 'Số 3', weight: 1, color: '#f59e0b' },
+                { name: 'Số 4', weight: 1, color: '#eab308' },
+                { name: 'Số 5', weight: 1, color: '#84cc16' },
+                { name: 'Số 6', weight: 1, color: '#10b981' },
+                { name: 'Số 7', weight: 1, color: '#06b6d4' },
+                { name: 'Số 8', weight: 1, color: '#3b82f6' },
+                { name: 'Số 9', weight: 1, color: '#6366f1' },
+                { name: 'Số 10', weight: 1, color: '#8b5cf6' }
+            ],
+            food: [
+                { name: 'Cơm Sườn', weight: 3, color: '#f59e0b' },
+                { name: 'Phở Bò', weight: 2, color: '#ef4444' },
+                { name: 'Bún Chả', weight: 2, color: '#10b981' },
+                { name: 'Gà Rán BBQ', weight: 1.5, color: '#3b82f6' },
+                { name: 'Pizza Hải Sản', weight: 1.5, color: '#8b5cf6' },
+                { name: 'Salad Heo', weight: 1, color: '#ec4899' }
+            ]
+        };
+
+        // Standard Vibrant Color Palette Generator
+        const vibrantColors = [
+            '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', 
+            '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', 
+            '#a855f7', '#d946ef', '#ec4899', '#f43f5e'
+        ];
+
+        // State Manager
+        let state = {
+            wheels: [
+                { id: 'w_lunch', name: 'Trưa nay ăn gì?', segments: [...templates.food] },
+                { id: 'w_yesno', name: 'Có hay Không?', segments: [...templates.yesno] }
+            ],
+            activeWheelId: 'w_lunch',
+            spinDuration: 5, // Default duration in seconds
+            isSpinning: false,
+            currentAngle: 0,
+            removeOnWin: false,      // User's choice to delete winning segment
+            pendingRemoval: null,     // Holds the index of segment to delete after modal closes
+
+            // Timer state fields
+            timerMin: 5,
+            timerSec: 0,
+            timerAutoSpin: false,
+            timerInterval: null,
+            timerRemainingSeconds: 0,
+            isTimerRunning: false,
+            isTimerPaused: false
+        };
+
+        // Track editing wheel name state
+        let editingWheelId = null;
+
+        // Web Audio Context for ticks
+        let audioCtx = null;
+
+        // Element Referencers
+        const canvas = document.getElementById('wheel-canvas');
+        const ctx = canvas.getContext('2d');
+        const soundToggle = document.getElementById('sound-toggle');
+        const wheelSelect = document.getElementById('wheel-select');
+
+        // Initial setup on window load
+        window.addEventListener('load', () => {
+            initApp();
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+        });
+
+        function initApp() {
+            // Load state from localStorage if available
+            try {
+                const savedState = localStorage.getItem('lucky_wheel_state');
+                if (savedState) {
+                    const parsed = JSON.parse(savedState);
+                    if (parsed.wheels && parsed.wheels.length > 0) {
+                        state.wheels = parsed.wheels;
+                        state.activeWheelId = parsed.activeWheelId || parsed.wheels[0].id;
+                        state.spinDuration = parsed.spinDuration || 5;
+                        state.removeOnWin = parsed.removeOnWin || false;
+                    }
+                    if (parsed.timerMin !== undefined) state.timerMin = parsed.timerMin;
+                    if (parsed.timerSec !== undefined) state.timerSec = parsed.timerSec;
+                    if (parsed.timerAutoSpin !== undefined) state.timerAutoSpin = parsed.timerAutoSpin;
+                }
+            } catch (e) {
+                console.warn("Storage not accessible. Using dynamic session state.");
+            }
+
+            document.getElementById('spin-duration').value = state.spinDuration;
+            updateDurationLabel(state.spinDuration);
+            document.getElementById('remove-on-win-toggle').checked = state.removeOnWin;
+
+            // Initialize Timer Inputs/Checkbox
+            document.getElementById('timer-min').value = String(state.timerMin).padStart(2, '0');
+            document.getElementById('timer-sec').value = String(state.timerSec).padStart(2, '0');
+            document.getElementById('timer-auto-spin').checked = state.timerAutoSpin;
+
+            renderWheelSelect();
+            renderActiveWheelConfig();
+        }
+
+        // Save progress to prevent loss within same session
+        function saveState() {
+            try {
+                localStorage.setItem('lucky_wheel_state', JSON.stringify({
+                    wheels: state.wheels,
+                    activeWheelId: state.activeWheelId,
+                    spinDuration: state.spinDuration,
+                    removeOnWin: state.removeOnWin,
+                    timerMin: state.timerMin,
+                    timerSec: state.timerSec,
+                    timerAutoSpin: state.timerAutoSpin
+                }));
+            } catch (e) {}
+        }
+
+        // Dropdown renderer
+        function renderWheelSelect() {
+            wheelSelect.innerHTML = '';
+            state.wheels.forEach(wheel => {
+                const option = document.createElement('option');
+                option.value = wheel.id;
+                option.textContent = wheel.name;
+                option.selected = wheel.id === state.activeWheelId;
+                wheelSelect.appendChild(option);
+            });
+            renderWheelsManagerList();
+        }
+
+        function switchWheel(id) {
+            if (state.isSpinning) return;
+            state.activeWheelId = id;
+            renderActiveWheelConfig();
+            renderWheelSelect();
+            drawWheel();
+            saveState();
+        }
+
+        // Active wheel settings loader
+        function getActiveWheel() {
+            return state.wheels.find(w => w.id === state.activeWheelId) || state.wheels[0];
+        }
+
+        // Live config rendering
+        function renderActiveWheelConfig() {
+            const wheel = getActiveWheel();
+            const tableBody = document.getElementById('segments-table-body');
+            const emptyState = document.getElementById('empty-state');
+            
+            tableBody.innerHTML = '';
+            
+            if (!wheel.segments || wheel.segments.length === 0) {
+                emptyState.classList.remove('hidden');
+                drawWheel();
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            const totalWeight = wheel.segments.reduce((acc, curr) => acc + parseFloat(curr.weight || 0), 0);
+
+            wheel.segments.forEach((seg, index) => {
+                const probability = totalWeight > 0 ? ((seg.weight / totalWeight) * 100).toFixed(1) : '0.0';
+                
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition duration-150 group";
+                
+                tr.innerHTML = `
+                    <td class="p-3 text-center align-middle">
+                        <input type="color" value="${seg.color}" onchange="updateSegmentColor(${index}, this.value)" class="w-7 h-7 rounded-md cursor-pointer border border-slate-200 p-0">
+                    </td>
+                    <td class="p-3 font-semibold text-slate-700">
+                        <input type="text" value="${seg.name}" onchange="updateSegmentName(${index}, this.value)" class="bg-transparent hover:bg-slate-100 focus:bg-slate-50 border border-transparent focus:border-slate-200 rounded px-2 py-1 w-full text-sm text-slate-800 focus:outline-none transition">
+                    </td>
+                    <td class="p-3 text-center align-middle">
+                        <div class="flex items-center justify-center gap-1">
+                            <button onclick="adjustWeight(${index}, -1)" class="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs flex items-center justify-center transition">-</button>
+                            <input type="number" value="${seg.weight}" step="any" min="0.1" onchange="updateSegmentWeight(${index}, this.value)" class="w-12 bg-slate-50 border border-slate-200 rounded text-center text-xs py-1 font-bold text-indigo-600 focus:outline-none">
+                            <button onclick="adjustWeight(${index}, 1)" class="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs flex items-center justify-center transition">+</button>
+                        </div>
+                    </td>
+                    <td class="p-3 text-right font-black text-emerald-400 text-xs tracking-wider font-mono">
+                        ${probability}%
+                    </td>
+                    <td class="p-3 text-center align-middle">
+                        <button onclick="deleteSegment(${index})" class="text-slate-400 hover:text-rose-600 transition p-1 rounded hover:bg-slate-100 opacity-0 group-hover:opacity-100">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            drawWheel();
+            saveState();
+        }
+
+        // List all customized wheels for direct deletion or quick access
+        function renderWheelsManagerList() {
+            const listContainer = document.getElementById('wheels-list');
+            listContainer.innerHTML = '';
+
+            state.wheels.forEach(wheel => {
+                const isActive = wheel.id === state.activeWheelId;
+                const isEditing = wheel.id === editingWheelId;
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `flex items-center justify-between p-3 rounded-xl border transition ${isActive ? 'bg-indigo-55 border-indigo-200' : 'bg-slate-50 border-slate-150 hover:bg-slate-100'}`;
+                
+                if (isEditing) {
+                    itemDiv.innerHTML = `
+                        <div class="flex items-center gap-2 w-full">
+                            <input type="text" id="rename-input-${wheel.id}" value="${wheel.name}" class="bg-white border border-slate-300 rounded-lg px-2 py-1 text-sm text-slate-850 focus:outline-none focus:ring-1 focus:ring-indigo-500 flex-1">
+                            <button onclick="saveWheelRename('${wheel.id}')" class="text-emerald-600 hover:text-emerald-500 p-1 bg-emerald-50 rounded-lg" title="Lưu">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </button>
+                            <button onclick="cancelWheelRename()" class="text-slate-400 hover:text-slate-600 p-1 bg-slate-100 rounded-lg" title="Hủy">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    itemDiv.innerHTML = `
+                        <button onclick="switchWheel('${wheel.id}')" class="flex-1 text-left font-bold text-sm truncate ${isActive ? 'text-indigo-700' : 'text-slate-700'} flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full ${isActive ? 'bg-indigo-600 animate-pulse' : 'bg-slate-400'}"></span>
+                            <span class="truncate pr-2">${wheel.name}</span>
+                            <span class="text-xs font-normal text-slate-500 font-mono">(${wheel.segments.length} ô)</span>
+                        </button>
+                        <div class="flex items-center gap-1">
+                            <button onclick="startWheelRename('${wheel.id}', event)" class="text-slate-400 hover:text-indigo-600 p-1.5 hover:bg-slate-200 rounded-lg transition" title="Đổi tên vòng quay">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            </button>
+                            ${state.wheels.length > 1 ? `
+                                <button onclick="deleteWheel('${wheel.id}')" class="text-slate-400 hover:text-rose-600 p-1.5 hover:bg-slate-200 rounded-lg transition" title="Xoá vòng quay này">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+                listContainer.appendChild(itemDiv);
+            });
+        }
+
+        // Rename actions
+        function startWheelRename(id, event) {
+            if (state.isSpinning) return;
+            if (event) event.stopPropagation(); // Block triggers of switchWheel
+            editingWheelId = id;
+            renderWheelsManagerList();
+            
+            // Auto focus input on next frame
+            setTimeout(() => {
+                const input = document.getElementById(`rename-input-${id}`);
+                if (input) {
+                    input.focus();
+                    input.select();
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') saveWheelRename(id);
+                        if (e.key === 'Escape') cancelWheelRename();
+                    });
+                }
+            }, 50);
+        }
+
+        function saveWheelRename(id) {
+            const input = document.getElementById(`rename-input-${id}`);
+            if (!input) return;
+            const newName = input.value.trim();
+            if (newName) {
+                const wheel = state.wheels.find(w => w.id === id);
+                if (wheel) {
+                    wheel.name = newName;
+                }
+                editingWheelId = null;
+                renderWheelSelect();
+                renderWheelsManagerList();
+                saveState();
+            }
+        }
+
+        function cancelWheelRename() {
+            editingWheelId = null;
+            renderWheelsManagerList();
+        }
+
+        // Segment management actions
+        function addSegment(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('seg-name');
+            const weightInput = document.getElementById('seg-weight');
+            const colorInput = document.getElementById('seg-color');
+
+            const name = nameInput.value.trim();
+            const weight = parseFloat(weightInput.value) || 1;
+            const color = colorInput.value;
+
+            if (!name) return;
+
+            const wheel = getActiveWheel();
+            wheel.segments.push({ name, weight, color });
+
+            // Reset inputs gracefully
+            nameInput.value = '';
+            weightInput.value = '1';
+            // Auto generate next bright color to save user time
+            colorInput.value = vibrantColors[Math.floor(Math.random() * vibrantColors.length)];
+
+            renderActiveWheelConfig();
+            nameInput.focus();
+        }
+
+        function deleteSegment(index) {
+            const wheel = getActiveWheel();
+            wheel.segments.splice(index, 1);
+            renderActiveWheelConfig();
+        }
+
+        function updateSegmentColor(index, color) {
+            const wheel = getActiveWheel();
+            wheel.segments[index].color = color;
+            drawWheel();
+            saveState();
+        }
+
+        function updateSegmentName(index, name) {
+            const wheel = getActiveWheel();
+            wheel.segments[index].name = name.trim() || `Ô số ${index + 1}`;
+            drawWheel();
+            saveState();
+        }
+
+        function updateSegmentWeight(index, val) {
+            const wheel = getActiveWheel();
+            const numericVal = parseFloat(val);
+            wheel.segments[index].weight = isNaN(numericVal) || numericVal <= 0 ? 0.1 : numericVal;
+            renderActiveWheelConfig();
+        }
+
+        function adjustWeight(index, change) {
+            const wheel = getActiveWheel();
+            let current = parseFloat(wheel.segments[index].weight) || 1;
+            current += change;
+            if (current < 0.1) current = 0.1;
+            wheel.segments[index].weight = parseFloat(current.toFixed(1));
+            renderActiveWheelConfig();
+        }
+
+        // Multi-color shuffle helper
+        function shuffleColors() {
+            const wheel = getActiveWheel();
+            wheel.segments.forEach((seg, idx) => {
+                seg.color = vibrantColors[idx % vibrantColors.length];
+            });
+            renderActiveWheelConfig();
+        }
+
+        function clearSegments() {
+            const wheel = getActiveWheel();
+            wheel.segments = [];
+            renderActiveWheelConfig();
+        }
+
+        // Multiple Wheels Creator Modal actions
+        function openNewWheelModal() {
+            if (state.isSpinning) return;
+            document.getElementById('new-wheel-modal').classList.remove('hidden');
+            document.getElementById('new-wheel-name').focus();
+        }
+
+        function closeNewWheelModal() {
+            document.getElementById('new-wheel-modal').classList.add('hidden');
+            document.getElementById('new-wheel-name').value = '';
+        }
+
+        function setTemplateAndCreate(templateKey) {
+            const nameInput = document.getElementById('new-wheel-name');
+            let name = nameInput.value.trim();
+            
+            if (!name) {
+                if (templateKey === 'yesno') name = 'Vòng quay Có/Không';
+                else if (templateKey === 'numbers') name = 'Vòng quay Con số';
+                else name = `Vòng quay mới #${state.wheels.length + 1}`;
+            }
+
+            let segments = [];
+            if (templateKey === 'yesno') segments = [...templates.yesno];
+            else if (templateKey === 'numbers') segments = [...templates.numbers];
+
+            const newWheel = {
+                id: 'w_' + Date.now(),
+                name: name,
+                segments: segments
+            };
+
+            state.wheels.push(newWheel);
+            state.activeWheelId = newWheel.id;
+            
+            closeNewWheelModal();
+            renderWheelSelect();
+            renderActiveWheelConfig();
+            drawWheel();
+            saveState();
+        }
+
+        function deleteWheel(id) {
+            if (state.isSpinning) return;
+            if (state.wheels.length <= 1) return;
+            state.wheels = state.wheels.filter(w => w.id !== id);
+            
+            // If the deleted one was active, switch active status
+            if (state.activeWheelId === id) {
+                state.activeWheelId = state.wheels[0].id;
+            }
+            
+            renderWheelSelect();
+            renderActiveWheelConfig();
+            drawWheel();
+            saveState();
+        }
+
+        function updateDurationLabel(val) {
+            state.spinDuration = parseInt(val);
+            document.getElementById('duration-val').textContent = `${val} giây`;
+            saveState();
+        }
+
+        function toggleRemoveOnWin(checked) {
+            state.removeOnWin = checked;
+            saveState();
+        }
+
+        // Dynamic High-DPI canvas resizing helper
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const size = Math.min(container.clientWidth, 420);
+            
+            canvas.width = size * window.devicePixelRatio;
+            canvas.height = size * window.devicePixelRatio;
+            canvas.style.width = size + 'px';
+            canvas.style.height = size + 'px';
+            
+            drawWheel();
+        }
+
+        // MAIN DRAW ENGINE (HTML5 Canvas Drawing)
+        function drawWheel() {
+            if (!canvas || !ctx) return;
+            
+            const w = canvas.width;
+            const h = canvas.height;
+            
+            // Bảo vệ 1: Ngăn không cho vẽ khi kích thước canvas không hợp lệ
+            if (w <= 0 || h <= 0) return;
+            
+            const centerX = w / 2;
+            const centerY = h / 2;
+            
+            // Bảo vệ 2: Giới hạn bán kính không bị âm hoặc quá nhỏ
+            const outerRadius = Math.max(1, (w / 2) - 10);
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            const wheel = getActiveWheel();
+            if (!wheel || !wheel.segments || wheel.segments.length === 0) {
+                // Empty state drawing
+                ctx.fillStyle = '#f1f5f9';
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, outerRadius, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                ctx.fillStyle = '#64748b';
+                ctx.font = `bold ${Math.max(12, w * 0.035)}px Lexend`;
+                ctx.textAlign = 'center';
+                ctx.fillText('HÃY THÊM Ô ĐỂ QUAY!', centerX, centerY);
+                return;
+            }
+
+            const totalWeight = wheel.segments.reduce((acc, curr) => acc + parseFloat(curr.weight || 0), 0);
+
+            // Save state for rotations
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(state.currentAngle);
+
+            let currentStartAngle = 0;
+
+            wheel.segments.forEach((seg, index) => {
+                const angleSize = (seg.weight / totalWeight) * 2 * Math.PI;
+                const endAngle = currentStartAngle + angleSize;
+
+                // Draw solid sector slice
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, outerRadius, currentStartAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = seg.color;
+                ctx.fill();
+
+                // Draw sleek boundary separation line
+                ctx.lineWidth = Math.max(1, w * 0.003);
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+
+                // Draw Text inside sector
+                ctx.save();
+                const midAngle = currentStartAngle + angleSize / 2;
+                ctx.rotate(midAngle);
+
+                // Max length of text to prevent bleed
+                const text = seg.name;
+                ctx.fillStyle = '#FFFFFF';
+                
+                // Adapt font size based on segments length dynamically
+                const idealFontSize = Math.max(12, Math.min(22, (outerRadius / (wheel.segments.length * 0.4))));
+                ctx.font = `bold ${idealFontSize}px Lexend`;
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+
+                // Shadow to secure legibility
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+                ctx.shadowBlur = 4;
+                ctx.shadowOffsetX = 1;
+                ctx.shadowOffsetY = 1;
+
+                // Avoid overlapping text in the center core
+                ctx.fillText(text, outerRadius - 25, 0);
+                ctx.restore();
+
+                currentStartAngle = endAngle;
+            });
+
+            // Outer decorative border
+            ctx.restore();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, outerRadius, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 6;
+            ctx.stroke();
+        }
+
+        // REAL-TIME AUDIO SYNTHESIZER (Web Audio API Tick Click generator)
+        function playTickSound() {
+            if (!soundToggle.checked) return;
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'triangle'; // Crisp, non-piercing wave type
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.05);
+
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.05);
+            } catch (e) {
+                console.log("Audio play blocked by browser sandbox.", e);
+            }
+        }
+
+        // PHYSICAL SPIN ENGINE
+        let lastTickAngleIndex = -1;
+
+        function spin() {
+            if (state.isSpinning) return;
+            
+            const wheel = getActiveWheel();
+            if (!wheel.segments || wheel.segments.length === 0) return;
+
+            state.isSpinning = true;
+            document.getElementById('spin-button').disabled = true;
+            document.getElementById('spin-button').classList.add('opacity-50', 'cursor-not-allowed');
+
+            const totalWeight = wheel.segments.reduce((acc, curr) => acc + parseFloat(curr.weight || 0), 0);
+
+            // 1. Weighted random winner selection beforehand
+            let randomWeight = Math.random() * totalWeight;
+            let currentSum = 0;
+            let winnerIndex = 0;
+
+            for (let i = 0; i < wheel.segments.length; i++) {
+                currentSum += wheel.segments[i].weight;
+                if (randomWeight <= currentSum) {
+                    winnerIndex = i;
+                    break;
+                }
+            }
+
+            // 2. Exact mathematical landing calculations
+            let anglesRange = [];
+            let currentAngleAccumulator = 0;
+            wheel.segments.forEach(seg => {
+                const size = (seg.weight / totalWeight) * 2 * Math.PI;
+                anglesRange.push({
+                    start: currentAngleAccumulator,
+                    end: currentAngleAccumulator + size
+                });
+                currentAngleAccumulator += size;
+            });
+
+            const winningSegmentAngles = anglesRange[winnerIndex];
+            // Center target within the selected slot
+            const padding = (winningSegmentAngles.end - winningSegmentAngles.start) * 0.15;
+            const targetSectorCenter = winningSegmentAngles.start + padding + Math.random() * (winningSegmentAngles.end - winningSegmentAngles.start - padding * 2);
+
+            // Alignment pointer correction (top is 1.5 * PI)
+            const pointerCorrection = 1.5 * Math.PI;
+            const finalAngleTargetRelative = (pointerCorrection - targetSectorCenter + 4 * Math.PI) % (2 * Math.PI);
+
+            const durationMs = state.spinDuration * 1000;
+            const fullRevolutions = Math.max(2, Math.floor(state.spinDuration * 2.5));
+            const startAngleBase = state.currentAngle % (2 * Math.PI);
+            
+            const targetAngleFinal = state.currentAngle + (fullRevolutions * 2 * Math.PI) + (finalAngleTargetRelative - startAngleBase);
+
+            const startTime = performance.now();
+            lastTickAngleIndex = -1;
+
+            // Smooth cubic quintic ease-out deceleration curve
+            function easeOutQuint(x) {
+                return 1 - Math.pow(1 - x, 4);
+            }
+
+            function animate(timestamp) {
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(elapsed / durationMs, 1);
+                
+                const easeValue = easeOutQuint(progress);
+                state.currentAngle = startAngleBase + (targetAngleFinal - startAngleBase) * easeValue;
+
+                // Fire tick sounds during rotation
+                triggerTicksCheck(wheel, totalWeight);
+
+                drawWheel();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Stop animation and celebrate winner!
+                    state.currentAngle = targetAngleFinal;
+                    drawWheel();
+                    
+                    state.isSpinning = false;
+                    document.getElementById('spin-button').disabled = false;
+                    document.getElementById('spin-button').classList.remove('opacity-50', 'cursor-not-allowed');
+
+                    announceWinner(winnerIndex, wheel);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Live boundary detection calculation
+        function triggerTicksCheck(wheel, totalWeight) {
+            const normalizedAngle = (1.5 * Math.PI - (state.currentAngle % (2 * Math.PI)) + 4 * Math.PI) % (2 * Math.PI);
+            
+            let currentStartAngle = 0;
+            let currentSegmentIndex = 0;
+
+            for (let i = 0; i < wheel.segments.length; i++) {
+                const angleSize = (wheel.segments[i].weight / totalWeight) * 2 * Math.PI;
+                const endAngle = currentStartAngle + angleSize;
+                if (normalizedAngle >= currentStartAngle && normalizedAngle < endAngle) {
+                    currentSegmentIndex = i;
+                    break;
+                }
+                currentStartAngle = endAngle;
+            }
+
+            if (currentSegmentIndex !== lastTickAngleIndex) {
+                playTickSound();
+                lastTickAngleIndex = currentSegmentIndex;
+            }
+        }
+
+        // SUCCESS DISPLAY MODAL & CELEBRATIONS
+        let confettiAnimationId = null;
+
+        function announceWinner(index, wheel) {
+            const winner = wheel.segments[index];
+            const totalWeight = wheel.segments.reduce((acc, curr) => acc + parseFloat(curr.weight || 0), 0);
+            const prob = ((winner.weight / totalWeight) * 100).toFixed(1);
+
+            // Set pending removal object if enabled
+            if (state.removeOnWin) {
+                state.pendingRemoval = {
+                    wheelId: wheel.id,
+                    index: index
+                };
+            } else {
+                state.pendingRemoval = null;
+            }
+
+            // Populate winner details in modal
+            const modal = document.getElementById('winner-modal');
+            const modalName = document.getElementById('winner-modal-name');
+            const modalProb = document.getElementById('winner-modal-prob');
+
+            modalName.textContent = winner.name;
+            modalName.style.color = winner.color;
+            modalProb.textContent = `Vòng quay: ${wheel.name} (Xác suất trúng gốc: ${prob}%)`;
+
+            // Display modal
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.add('opacity-100');
+                modal.firstElementChild.classList.remove('scale-90');
+                modal.firstElementChild.classList.add('scale-100');
+            }, 10);
+
+            // Start particle explosion
+            initConfetti();
+        }
+
+        function closeWinnerModal() {
+            const modal = document.getElementById('winner-modal');
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0');
+            modal.firstElementChild.classList.remove('scale-100');
+            modal.firstElementChild.classList.add('scale-90');
+            
+            if (confettiAnimationId) {
+                cancelAnimationFrame(confettiAnimationId);
+                confettiAnimationId = null;
+            }
+
+            // Perform segment removal if it was set
+            if (state.pendingRemoval) {
+                const targetWheel = state.wheels.find(w => w.id === state.pendingRemoval.wheelId);
+                if (targetWheel && targetWheel.segments.length > 0) {
+                    targetWheel.segments.splice(state.pendingRemoval.index, 1);
+                    // Reset wheel rotation position to starting point gracefully
+                    state.currentAngle = 0;
+                    renderActiveWheelConfig();
+                }
+                state.pendingRemoval = null;
+            }
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // Particle confetti generation
+        function initConfetti() {
+            const confCanvas = document.getElementById('confetti-canvas');
+            const confCtx = confCanvas.getContext('2d');
+            
+            let cw = confCanvas.width = confCanvas.parentElement.clientWidth;
+            let ch = confCanvas.height = confCanvas.parentElement.clientHeight;
+            
+            const colors = ['#f43f5e', '#ec4899', '#8b5cf6', '#3b82f6', '#10b981', '#eab308'];
+            const particles = [];
+
+            for (let i = 0; i < 120; i++) {
+                particles.push({
+                    x: Math.random() * cw,
+                    y: Math.random() * ch - ch,
+                    r: Math.random() * 6 + 4,
+                    d: Math.random() * ch,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    tilt: Math.random() * 10 - 5,
+                    tiltAngleIncremental: Math.random() * 0.07 + 0.02,
+                    tiltAngle: 0
+                });
+            }
+
+            function drawConfetti() {
+                confCtx.clearRect(0, 0, cw, ch);
+                
+                particles.forEach((p, idx) => {
+                    p.tiltAngle += p.tiltAngleIncremental;
+                    p.y += (Math.cos(p.d) + 3 + p.r / 2) / 2;
+                    p.x += Math.sin(p.tiltAngle);
+                    p.tilt = Math.sin(p.tiltAngle - idx / 3) * 15;
+
+                    if (p.y > ch) {
+                        p.x = Math.random() * cw;
+                        p.y = -20;
+                        p.tilt = Math.random() * 10 - 5;
+                    }
+
+                    confCtx.beginPath();
+                    confCtx.lineWidth = p.r;
+                    confCtx.strokeStyle = p.color;
+                    confCtx.moveTo(p.x + p.tilt + p.r / 2, p.y);
+                    confCtx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 2);
+                    confCtx.stroke();
+                });
+
+                confettiAnimationId = requestAnimationFrame(drawConfetti);
+            }
+
+            drawConfetti();
+        }
+
+        // Countdown Timer Logic
+        function validateTimerInputs() {
+            const minInput = document.getElementById('timer-min');
+            const secInput = document.getElementById('timer-sec');
+            
+            let m = parseInt(minInput.value);
+            let s = parseInt(secInput.value);
+            
+            if (isNaN(m) || m < 0) m = 0;
+            if (m > 99) m = 99;
+            
+            if (isNaN(s) || s < 0) s = 0;
+            if (s > 59) {
+                s = 59;
+            }
+            
+            // Save state
+            state.timerMin = m;
+            state.timerSec = s;
+            saveState();
+        }
+
+        function toggleTimerAutoSpin(checked) {
+            state.timerAutoSpin = checked;
+            saveState();
+        }
+
+        function adjustTimerTime(changeSeconds) {
+            if (state.isTimerRunning) return; // Prevent adjustment when running
+            
+            let m = parseInt(document.getElementById('timer-min').value) || 0;
+            let s = parseInt(document.getElementById('timer-sec').value) || 0;
+            
+            let total = m * 60 + s + changeSeconds;
+            if (total < 0) total = 0;
+            if (total > 5999) total = 5999; // Cap at 99m 59s
+            
+            m = Math.floor(total / 60);
+            s = total % 60;
+            
+            document.getElementById('timer-min').value = String(m).padStart(2, '0');
+            document.getElementById('timer-sec').value = String(s).padStart(2, '0');
+            
+            state.timerMin = m;
+            state.timerSec = s;
+            saveState();
+        }
+
+        function toggleTimer() {
+            const startBtn = document.getElementById('timer-start-button');
+            const startText = document.getElementById('timer-start-text');
+            const startIcon = document.getElementById('timer-start-icon');
+            
+            if (state.isTimerRunning) {
+                // Pause action
+                clearInterval(state.timerInterval);
+                state.isTimerRunning = false;
+                state.isTimerPaused = true;
+                
+                // Update UI to paused state
+                startText.textContent = 'Tiếp tục';
+                startIcon.textContent = '▶️';
+                startBtn.classList.remove('bg-amber-500', 'hover:bg-amber-400');
+                startBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
+                
+                const display = document.getElementById('timer-running-display');
+                display.classList.remove('text-indigo-600', 'text-rose-600');
+                display.classList.add('text-amber-500');
+            } else {
+                // Start / Resume action
+                if (!state.isTimerPaused) {
+                    // Start fresh: read inputs
+                    let m = parseInt(document.getElementById('timer-min').value) || 0;
+                    let s = parseInt(document.getElementById('timer-sec').value) || 0;
+                    state.timerRemainingSeconds = m * 60 + s;
+                }
+                
+                if (state.timerRemainingSeconds <= 0) {
+                    return;
+                }
+                
+                // Hide inputs, show static countdown display
+                document.getElementById('timer-edit-inputs').classList.add('hidden');
+                document.getElementById('timer-running-display').classList.remove('hidden');
+                document.getElementById('timer-quick-adjusts').classList.add('opacity-40', 'pointer-events-none');
+                
+                state.isTimerRunning = true;
+                state.isTimerPaused = false;
+                
+                // Update button to running state
+                startText.textContent = 'Tạm dừng';
+                startIcon.textContent = '⏸️';
+                startBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
+                startBtn.classList.add('bg-amber-500', 'hover:bg-amber-400');
+                
+                updateTimerUI();
+                
+                state.timerInterval = setInterval(() => {
+                    state.timerRemainingSeconds--;
+                    if (state.timerRemainingSeconds < 0) {
+                        handleTimerExpire();
+                    } else {
+                        updateTimerUI();
+                    }
+                }, 1000);
+            }
+        }
+
+        function updateTimerUI() {
+            const m = Math.floor(state.timerRemainingSeconds / 60);
+            const s = state.timerRemainingSeconds % 60;
+            
+            document.getElementById('timer-run-min').textContent = String(m).padStart(2, '0');
+            document.getElementById('timer-run-sec').textContent = String(s).padStart(2, '0');
+            
+            const display = document.getElementById('timer-running-display');
+            
+            // Audio Tick in final 5 seconds
+            if (state.timerRemainingSeconds <= 5 && state.timerRemainingSeconds > 0) {
+                playTickSound();
+            }
+            
+            // Visual feedback when running low
+            if (state.timerRemainingSeconds <= 10) {
+                display.classList.remove('text-indigo-600', 'text-amber-500');
+                display.classList.add('text-rose-600');
+            } else {
+                display.classList.remove('text-rose-600', 'text-amber-500');
+                display.classList.add('text-indigo-600');
+            }
+        }
+
+        function playAlarmSound() {
+            if (!soundToggle.checked) return;
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                
+                const now = audioCtx.currentTime;
+                const playBeep = (timeOffset, frequency, duration) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(frequency, now + timeOffset);
+                    
+                    gain.gain.setValueAtTime(0, now + timeOffset);
+                    gain.gain.linearRampToValueAtTime(0.25, now + timeOffset + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + timeOffset + duration);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start(now + timeOffset);
+                    osc.stop(now + timeOffset + duration);
+                };
+                
+                playBeep(0, 1000, 0.15);
+                playBeep(0.2, 1000, 0.15);
+                playBeep(0.4, 1200, 0.25);
+            } catch (e) {
+                console.warn("Audio alarm blocked or error:", e);
+            }
+        }
+
+        function handleTimerExpire() {
+            clearInterval(state.timerInterval);
+            state.isTimerRunning = false;
+            state.isTimerPaused = false;
+            
+            playAlarmSound();
+            
+            const startBtn = document.getElementById('timer-start-button');
+            const startText = document.getElementById('timer-start-text');
+            const startIcon = document.getElementById('timer-start-icon');
+            
+            startText.textContent = 'Bắt đầu';
+            startIcon.textContent = '▶️';
+            startBtn.classList.remove('bg-amber-500', 'hover:bg-amber-400');
+            startBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
+            
+            document.getElementById('timer-edit-inputs').classList.remove('hidden');
+            document.getElementById('timer-running-display').classList.add('hidden');
+            document.getElementById('timer-quick-adjusts').classList.remove('opacity-40', 'pointer-events-none');
+            
+            if (state.timerAutoSpin) {
+                spin();
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(state.timerInterval);
+            state.isTimerRunning = false;
+            state.isTimerPaused = false;
+            
+            document.getElementById('timer-min').value = String(state.timerMin).padStart(2, '0');
+            document.getElementById('timer-sec').value = String(state.timerSec).padStart(2, '0');
+            
+            const startBtn = document.getElementById('timer-start-button');
+            const startText = document.getElementById('timer-start-text');
+            const startIcon = document.getElementById('timer-start-icon');
+            
+            startText.textContent = 'Bắt đầu';
+            startIcon.textContent = '▶️';
+            startBtn.classList.remove('bg-amber-500', 'hover:bg-amber-400');
+            startBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
+            
+            document.getElementById('timer-edit-inputs').classList.remove('hidden');
+            document.getElementById('timer-running-display').classList.add('hidden');
+            document.getElementById('timer-quick-adjusts').classList.remove('opacity-40', 'pointer-events-none');
+        }
+    </script>
 </body>
 </html>
-
-
